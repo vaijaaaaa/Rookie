@@ -45,7 +45,7 @@ export function PracticePreview({
             ))}
           </ul>
           <Button asChild variant="outline" className="mt-6">
-            <Link href="/signup">
+            <Link href="/login">
               Start practicing <ArrowRight />
             </Link>
           </Button>

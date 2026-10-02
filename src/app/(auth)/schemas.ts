@@ -18,13 +18,6 @@ export const loginSchema = z.object({
 });
 export type LoginValues = z.infer<typeof loginSchema>;
 
-export const signupSchema = z.object({
-  fullName: z.string().trim().min(2, "Enter your name").max(80, "Name is too long"),
-  email,
-  password: newPassword,
-});
-export type SignupValues = z.infer<typeof signupSchema>;
-
 export const forgotPasswordSchema = z.object({ email });
 export type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
 

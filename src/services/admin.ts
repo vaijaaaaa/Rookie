@@ -287,7 +287,6 @@ export async function getUserDetail(id: string) {
 
 export interface PlatformSettings {
   site_name: string;
-  allow_signups: boolean;
   default_timezone: string;
   announcement_banner: string;
   maintenance_mode: boolean;
@@ -295,7 +294,6 @@ export interface PlatformSettings {
 
 export const DEFAULT_SETTINGS: PlatformSettings = {
   site_name: "Rookie",
-  allow_signups: true,
   default_timezone: "UTC",
   announcement_banner: "",
   maintenance_mode: false,

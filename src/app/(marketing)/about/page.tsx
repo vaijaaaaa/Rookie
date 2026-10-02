@@ -98,7 +98,7 @@ export default function AboutPage() {
 
       <div className="mt-16 flex flex-wrap gap-3 border-t pt-10">
         <Button asChild variant="brand">
-          <Link href="/signup">
+          <Link href="/login">
             Start learning <ArrowRight />
           </Link>
         </Button>

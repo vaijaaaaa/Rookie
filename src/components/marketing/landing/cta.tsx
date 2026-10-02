@@ -13,7 +13,7 @@ export function LandingCta({ homeHref }: { homeHref: string | null }) {
               Start with the fundamentals today.
             </h2>
             <p className="mt-2 max-w-lg text-sm text-muted-foreground">
-              Create an account, pick a goal, and get a roadmap plus your first daily agenda in under two minutes.
+              Log in with the account your admin created, pick a goal, and get a roadmap plus your first daily agenda in minutes.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -26,12 +26,9 @@ export function LandingCta({ homeHref }: { homeHref: string | null }) {
             ) : (
               <>
                 <Button asChild size="lg" variant="brand">
-                  <Link href="/signup">
-                    Create free account <ArrowRight />
+                  <Link href="/login">
+                    Log in <ArrowRight />
                   </Link>
-                </Button>
-                <Button asChild size="lg" variant="ghost">
-                  <Link href="/login">Log in</Link>
                 </Button>
               </>
             )}

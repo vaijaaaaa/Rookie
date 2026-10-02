@@ -5,6 +5,7 @@ import { RoleBadge } from "@/components/admin/role-badge";
 import { RoleMenu } from "@/components/admin/role-menu";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
+import { AddUserDialog } from "@/components/admin/add-user-dialog";
 import { UserAvatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,7 +51,8 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: S
       <PageHeader
         eyebrow="Admin"
         title={heading}
-        description="Search accounts, review onboarding and change roles."
+        description="Add accounts, search, review onboarding and change roles. There is no public signup."
+        actions={<AddUserDialog />}
       />
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

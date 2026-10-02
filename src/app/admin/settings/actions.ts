@@ -18,7 +18,6 @@ const isTimeZone = (tz: string) => {
 
 const schema = z.object({
   site_name: z.string().trim().min(1, "Site name is required").max(60, "Site name is too long"),
-  allow_signups: z.boolean(),
   default_timezone: z.string().refine(isTimeZone, "Unknown timezone"),
   announcement_banner: z.string().trim().max(280, "Banner must be 280 characters or fewer"),
   maintenance_mode: z.boolean(),

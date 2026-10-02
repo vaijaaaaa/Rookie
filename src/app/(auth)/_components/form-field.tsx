@@ -61,13 +61,3 @@ export function AuthHeading({ eyebrow, title, description }: { eyebrow: string; 
     </div>
   );
 }
-
-export function OrDivider() {
-  return (
-    <div className="my-5 flex items-center gap-3" role="separator" aria-label="or">
-      <span className="h-px flex-1 bg-border" />
-      <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">or</span>
-      <span className="h-px flex-1 bg-border" />
-    </div>
-  );
-}

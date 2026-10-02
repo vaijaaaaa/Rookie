@@ -17,7 +17,7 @@ const TIERS = [
     price: "$0",
     period: "forever",
     blurb: "Everything you need to learn the fundamentals on your own.",
-    cta: { label: "Start free", href: "/signup" },
+    cta: { label: "Start free", href: "/login" },
     featured: false,
     features: [
       "All published roadmaps",
@@ -33,7 +33,7 @@ const TIERS = [
     price: "$12",
     period: "per month",
     blurb: "For learners who want structure, live teaching and feedback.",
-    cta: { label: "Start with Pro", href: "/signup?plan=pro" },
+    cta: { label: "Start with Pro", href: "/login" },
     featured: true,
     features: [
       "Everything in Free",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Info, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { updatePlatformSettings, type SettingsInput } from "@/app/admin/settings/actions";
 import { Button } from "@/components/ui/button";
@@ -70,22 +70,6 @@ export function SettingsForm({ initial, timezones }: { initial: SettingsInput; t
             maxLength={60}
             onChange={(e) => set("site_name", e.target.value)}
             required
-          />
-        </Row>
-        <Row
-          title="Allow signups"
-          htmlFor="allow_signups"
-          description={
-            <span className="inline-flex items-start gap-1">
-              <Info className="mt-px size-3 shrink-0" />
-              Advisory only. To actually block new accounts, disable signups in Supabase Auth settings.
-            </span>
-          }
-        >
-          <Switch
-            id="allow_signups"
-            checked={values.allow_signups}
-            onCheckedChange={(c) => set("allow_signups", c)}
           />
         </Row>
         <Row

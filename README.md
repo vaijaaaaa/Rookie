@@ -43,6 +43,10 @@ Browser ──► Next.js (Server Components / Server Actions) ──► Supabas
 - **Authorization lives in the database.** Every table has RLS enabled; anything not explicitly
   allowed is denied. The UI also hides actions by role, and server actions re-check roles for
   better error messages, but the source of truth is `supabase/migrations/*_rls.sql`.
+- **No public signup.** Admins create accounts (Admin → Users → Add user) through the
+  `admin_create_user` database function, which re-checks `is_admin()`. Admins can also reset a
+  user's password or delete the account. Supabase's own signup endpoint must be switched off in
+  the dashboard so it can't be called directly. Email + password is the only login method.
 - **Roles** are `student` and `admin` (a `user_role` enum on `profiles`). New users are
   always students. A trigger blocks role changes unless the caller is an admin; admins use the
   `admin_set_role` RPC.
@@ -96,8 +100,8 @@ are trusted — fine for a learning MVP, not for competitive grading.
 src/
   app/
     (marketing)/          /, /about, /pricing
-    (auth)/               /login, /signup, /forgot-password, /reset-password
-    auth/                 OAuth callback + email confirm route handlers
+    (auth)/               /login, /forgot-password, /reset-password (no public signup)
+    auth/                 email-link confirm route handler (password recovery)
     onboarding/           3-step onboarding → recommended roadmap
     (app)/                hybrid layout: app shell if signed in, marketing chrome if not
       courses/            public catalog, course page, lesson reader
@@ -122,7 +126,7 @@ src/
   types/                  domain types mirroring the schema
   proxy.ts                refreshes Supabase session, redirects anonymous users from protected routes
 supabase/
-  migrations/             0001 schema · 0002 functions & triggers · 0003 RLS · 0004 trigger fixes · 0005 two roles
+  migrations/             0001 schema · 0002 functions & triggers · 0003 RLS · 0004 trigger fixes · 0005 two roles · 0006 admin-managed accounts
   seed.sql                realistic demo data (users, courses, lessons, roadmaps, classes…)
 scripts/
   validate-db.mjs         runs migrations + seed in PGlite (in-process Postgres) as a smoke test
@@ -137,7 +141,8 @@ docs/CONVENTIONS.md       engineering conventions
 2. **Apply the migrations** — either:
    - **SQL editor**: open *SQL Editor* and run, in order,
      `supabase/migrations/20261002000001_schema.sql`, `…0002_functions.sql`, `…0003_rls.sql`,
-     `…0004_trigger_fixes.sql`, `…0005_admin_student_roles.sql`; or
+     `…0004_trigger_fixes.sql`, `…0005_admin_student_roles.sql`,
+     `…0006_admin_user_management.sql`; or
    - **CLI**:
      ```bash
      npx supabase login
@@ -147,10 +152,14 @@ docs/CONVENTIONS.md       engineering conventions
 3. **Seed demo data** (development only): run `supabase/seed.sql` in the SQL editor, or
    `npx supabase db execute --file supabase/seed.sql` / `psql "$DATABASE_URL" -f supabase/seed.sql`.
    The seed is re-runnable: it deletes its own demo rows first.
-4. **Auth settings** (*Authentication → URL Configuration*): set Site URL to your app URL and add
-   `http://localhost:3000/**` to redirect URLs.
-5. **Google OAuth (optional)**: *Authentication → Providers → Google*, add client ID/secret, and add
-   `https://<project-ref>.supabase.co/auth/v1/callback` as an authorized redirect URI in Google Cloud.
+4. **Auth settings** (*Authentication*):
+   - *Sign In / Providers* → turn **off** "Allow new users to sign up", and leave Google and other
+     OAuth providers **disabled**. Rookie has no public signup — accounts are created by admins.
+   - *URL Configuration* → set Site URL to your app URL and add `http://localhost:3000/**`
+     to redirect URLs (used by password-reset emails).
+5. **Create the first admin**: open `supabase/bootstrap-admin.sql`, replace the placeholder
+   password, and run it in the SQL editor (don't commit your real password). Log in with that
+   account and add everyone else from **Admin → Users → Add user**.
 6. **Realtime**: the RLS migration adds `notifications` to the `supabase_realtime` publication.
 
 ### Demo accounts (from `seed.sql`)
@@ -163,8 +172,7 @@ docs/CONVENTIONS.md       engineering conventions
 
 > ⚠️ These are development credentials. Delete or change them before going to production.
 
-To make yourself an admin after signing up: run
-`update public.profiles set role = 'admin' where email = 'you@example.com';` in the SQL editor.
+To create your own admin account, run `supabase/bootstrap-admin.sql` (see step 5 above).
 
 ---
 
@@ -238,4 +246,3 @@ assignments, post announcements and cohort agendas, and manage users and setting
 - Java/Python execution needs a sandboxed judge service (see *Code execution*).
 - Deadline/“class starting soon” reminders are shown in-app; time-based push reminders would need
   `pg_cron` or a scheduled function.
-- `allow_signups` in platform settings is advisory — enforce it in Supabase Auth settings.

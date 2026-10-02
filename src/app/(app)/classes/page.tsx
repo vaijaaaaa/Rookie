@@ -105,7 +105,7 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
               <Link href="/login">Log in</Link>
             </Button>
             <Button asChild variant="brand" size="sm">
-              <Link href="/signup">Sign up free</Link>
+              <Link href="/login">Log in</Link>
             </Button>
           </div>
         </div>

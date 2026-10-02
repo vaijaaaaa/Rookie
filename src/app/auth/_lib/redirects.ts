@@ -9,7 +9,7 @@ export function safeNextPath(next: string | null | undefined): string | null {
   if (!next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return null;
   if (/[\r\n\t]/.test(next)) return null;
   // Never bounce back into the auth pages themselves.
-  if (/^\/(login|signup|forgot-password)(\/|\?|$)/.test(next)) return null;
+  if (/^\/(login|forgot-password)(\/|\?|$)/.test(next)) return null;
   return next;
 }
 

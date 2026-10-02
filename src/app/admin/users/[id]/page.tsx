@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Activity, ArrowLeft, BookOpen, CalendarCheck } from "lucide-react";
 import { RoleBadge } from "@/components/admin/role-badge";
 import { RoleMenu } from "@/components/admin/role-menu";
+import { UserAccountActions } from "@/components/admin/user-account-actions";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { Section } from "@/components/shared/section";
@@ -65,13 +66,20 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
         }
         description={profile.email ?? undefined}
         actions={
-          <RoleMenu
-            userId={profile.id}
-            userName={profile.full_name || profile.email || "This user"}
-            role={profile.role}
-            isSelf={isSelf}
-            size="default"
-          />
+          <>
+            <RoleMenu
+              userId={profile.id}
+              userName={profile.full_name || profile.email || "This user"}
+              role={profile.role}
+              isSelf={isSelf}
+              size="default"
+            />
+            <UserAccountActions
+              userId={profile.id}
+              userName={profile.full_name || profile.email || "this user"}
+              isSelf={isSelf}
+            />
+          </>
         }
       />
 

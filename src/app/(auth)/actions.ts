@@ -9,11 +9,9 @@ import {
   forgotPasswordSchema,
   loginSchema,
   resetPasswordSchema,
-  signupSchema,
   type ForgotPasswordValues,
   type LoginValues,
   type ResetPasswordValues,
-  type SignupValues,
 } from "./schemas";
 
 type RedirectProfile = Pick<Profile, "role" | "onboarded_at">;
@@ -46,34 +44,6 @@ export async function signInWithPassword(values: LoginValues): Promise<ActionRes
     .maybeSingle<RedirectProfile>();
 
   redirect(postAuthRedirect(profile ?? null, parsed.data.next));
-}
-
-/** Email + password sign up. Redirects to onboarding if a session is returned. */
-export async function signUp(values: SignupValues): Promise<ActionResult<{ needsConfirmation: boolean }>> {
-  const parsed = signupSchema.safeParse(values);
-  if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
-
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
-    email: parsed.data.email,
-    password: parsed.data.password,
-    options: {
-      data: { full_name: parsed.data.fullName },
-      emailRedirectTo: `${SITE_URL}/auth/confirm`,
-    },
-  });
-
-  if (error) {
-    if (error.code === "user_already_exists") {
-      return { ok: false, error: "An account with this email already exists. Try logging in." };
-    }
-    if (error.code === "weak_password") return { ok: false, error: error.message };
-    return { ok: false, error: "Couldn't create your account. Please try again." };
-  }
-
-  if (data.session) redirect("/onboarding");
-
-  return { ok: true, data: { needsConfirmation: true }, message: "Check your email to confirm your account." };
 }
 
 /** Sends a password reset email. Always reports success to avoid account enumeration. */

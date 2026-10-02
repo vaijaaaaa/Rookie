@@ -163,5 +163,40 @@ if (admin) {
   }
   console.log('  student_growth:', s.student_growth.map((w) => `${w.week}:${w.count}`).join(' '));
 }
+
+// --- admin-managed accounts (0006) -----------------------------------------
+{
+  const sub = (id) => db.exec(`select set_config('request.jwt.claim.sub', '${id ?? ''}', false)`);
+  const { rows: [adm] } = await db.query(`select id from public.profiles where role = 'admin' limit 1`);
+  const { rows: [stu] } = await db.query(`select id from public.profiles where role = 'student' limit 1`);
+  // student cannot create users
+  await sub(stu.id);
+  let blocked = false;
+  try { await db.query(`select public.admin_create_user('x@test.dev', 'X', 'password123', 'student')`); }
+  catch { blocked = true; }
+  if (!blocked) throw new Error('student was able to create a user');
+  // admin can create, reset password and delete
+  await sub(adm.id);
+  const { rows: [c] } = await db.query(`select public.admin_create_user('New.Person@Test.dev', 'New Person', 'password123', 'student') as id`);
+  const { rows: [p] } = await db.query(`select role, email, full_name, onboarded_at from public.profiles where id = $1`, [c.id]);
+  const { rows: [pw] } = await db.query(`select encrypted_password = extensions.crypt('password123', encrypted_password) as ok from auth.users where id = $1`, [c.id]);
+  let dup = false;
+  try { await db.query(`select public.admin_create_user('new.person@test.dev', 'Dup', 'password123', 'student')`); } catch { dup = true; }
+  await db.query(`select public.admin_set_password($1, 'another-pass-1')`, [c.id]);
+  const { rows: [pw2] } = await db.query(`select encrypted_password = extensions.crypt('another-pass-1', encrypted_password) as ok from auth.users where id = $1`, [c.id]);
+  let selfDelete = false;
+  try { await db.query(`select public.admin_delete_user($1)`, [adm.id]); } catch { selfDelete = true; }
+  await db.query(`select public.admin_delete_user($1)`, [c.id]);
+  const { rows: [gone] } = await db.query(`select count(*)::int n from public.profiles where id = $1`, [c.id]);
+  await sub(null);
+  // SQL-editor bootstrap (no auth.uid()) creates an onboarded admin
+  const { rows: [b] } = await db.query(`select public.admin_create_user('boot@test.dev', 'Boot', 'password123', 'admin') as id`);
+  const { rows: [bp] } = await db.query(`select role, onboarded_at is not null as onboarded from public.profiles where id = $1`, [b.id]);
+  await db.query(`delete from auth.users where id = $1`, [b.id]);
+  const ok = p.role === 'student' && p.email === 'new.person@test.dev' && p.full_name === 'New Person' && !p.onboarded_at
+    && pw.ok && pw2.ok && dup && selfDelete && gone.n === 0 && bp.role === 'admin' && bp.onboarded;
+  console.log('\nUser management:', JSON.stringify({ studentBlocked: blocked, created: p, passwordOk: pw.ok, duplicateRejected: dup, resetOk: pw2.ok, selfDeleteRejected: selfDelete, deleted: gone.n === 0, bootstrapAdmin: bp }));
+  if (!ok) throw new Error('user management checks failed');
+}
 console.log('\nAll good.');
 await db.close();

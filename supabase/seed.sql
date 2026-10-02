@@ -4464,7 +4464,6 @@ update public.notifications set read_at = now() - interval '8 days'
 -- ---------------------------------------------------------------------------
 insert into public.platform_settings (key, value) values
   ('site_name', '"Rookie"'),
-  ('allow_signups', 'true'),
   ('default_timezone', '"UTC"'),
   ('announcement_banner', '""'),
   ('maintenance_mode', 'false')

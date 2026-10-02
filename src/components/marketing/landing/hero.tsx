@@ -38,8 +38,8 @@ export function Hero({ homeHref }: { homeHref: string | null }) {
               </Button>
             ) : (
               <Button asChild size="lg" variant="brand">
-                <Link href="/signup">
-                  Start learning free <ArrowRight />
+                <Link href="/login">
+                  Log in to start <ArrowRight />
                 </Link>
               </Button>
             )}

@@ -70,7 +70,7 @@ export default async function AdminDashboardPage() {
         <StatCard
           label="New students (12w)"
           value={signups12w.toLocaleString()}
-          hint="Weekly signups below"
+          hint="Weekly additions below"
           icon={UserPlus}
         />
       </div>
@@ -82,11 +82,11 @@ export default async function AdminDashboardPage() {
               ? `${signups12w.toLocaleString()} new students in the last 12 weeks`
               : "No new students in the last 12 weeks"
           }
-          description="Student signups per week"
+          description="Students added per week"
           data={growth}
           xKey="week"
           yKey="signups"
-          valueLabel="Signups"
+          valueLabel="New students"
         />
         <AreaChartCard
           title={
@@ -135,10 +135,10 @@ export default async function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <Section title="Recent signups" href="/admin/users" hrefLabel="All users" contentClassName="p-0">
+        <Section title="Recently added users" href="/admin/users" hrefLabel="All users" contentClassName="p-0">
           {recent.length === 0 ? (
             <div className="p-4">
-              <EmptyState icon={UserPlus} title="No users yet" description="New signups will appear here." />
+              <EmptyState icon={UserPlus} title="No users yet" description="Users you add will appear here." />
             </div>
           ) : (
             <ul className="divide-y">

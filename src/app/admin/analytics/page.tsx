@@ -180,12 +180,12 @@ export default async function AdminAnalyticsPage() {
           </Section>
 
           <BarChartCard
-            title={`${growth.reduce((s, g) => s + g.signups, 0).toLocaleString()} student signups in 12 weeks`}
+            title={`${growth.reduce((s, g) => s + g.signups, 0).toLocaleString()} students added in 12 weeks`}
             description="New students per week"
             data={growth}
             xKey="week"
             yKey="signups"
-            valueLabel="Signups"
+            valueLabel="New students"
             height={160}
           />
         </div>

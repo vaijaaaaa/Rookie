@@ -25,11 +25,8 @@ export function SiteHeader() {
         </nav>
         <div className="ml-auto flex items-center gap-1.5">
           <ThemeToggle />
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/login">Log in</Link>
-          </Button>
           <Button asChild size="sm" variant="brand">
-            <Link href="/signup">Start learning</Link>
+            <Link href="/login">Log in</Link>
           </Button>
         </div>
       </div>

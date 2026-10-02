@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Logo } from "@/components/layout/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-/** Centered card layout for login / signup / password flows. */
+/** Centered card layout for login and password flows. */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative flex min-h-dvh flex-col">
