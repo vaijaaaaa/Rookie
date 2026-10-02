@@ -3,6 +3,7 @@ import { Faq } from "@/components/marketing/landing/faq";
 import { Hero } from "@/components/marketing/landing/hero";
 import { Inside } from "@/components/marketing/landing/inside";
 import { Paths } from "@/components/marketing/landing/paths";
+import { RevealObserver } from "@/components/marketing/landing/reveal-observer";
 import { TopicMarquee } from "@/components/marketing/landing/topic-marquee";
 
 // Fully static: no per-request data, so it's served straight from the CDN cache.
@@ -16,6 +17,7 @@ export default function LandingPage() {
       <Inside />
       <Faq />
       <LandingCta />
+      <RevealObserver />
     </>
   );
 }

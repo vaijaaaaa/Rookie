@@ -215,12 +215,19 @@
   animation-delay: var(--delay, 0ms);
 }
 
-/* Reveal on scroll where the browser supports scroll-driven animations; visible otherwise. */
-@supports (animation-timeline: view()) {
-  .landing-reveal {
-    animation: landing-fade-up linear both;
-    animation-timeline: view();
-    animation-range: entry 0% entry 40%;
+/* Reveal on scroll: RevealObserver marks elements with [data-revealed] once they enter
+   the viewport, then a time-based animation plays to completion (never stuck mid-way).
+   Without JS or with reduced motion, content is simply visible. */
+@keyframes landing-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .landing-reveal:not([data-revealed]) {
+    opacity: 0;
+  }
+  .landing-reveal[data-revealed] {
+    animation: landing-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) var(--reveal-delay, 0ms) both;
   }
 }
 
