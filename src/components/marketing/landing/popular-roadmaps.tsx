@@ -26,7 +26,7 @@ export function PopularRoadmaps({ roadmaps }: { roadmaps: LandingRoadmap[] }) {
         <EmptyState
           icon={Map}
           title="Roadmaps are being drafted"
-          description="Instructors haven't published any roadmaps yet. Check back soon."
+          description="We haven't published any roadmaps yet. Check back soon."
         />
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2">

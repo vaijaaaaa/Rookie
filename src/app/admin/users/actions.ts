@@ -9,7 +9,7 @@ import type { ActionResult, UserRole } from "@/types";
 
 const schema = z.object({
   userId: z.guid(),
-  role: z.enum(["student", "instructor", "admin"]),
+  role: z.enum(["student", "admin"]),
 });
 
 export async function setUserRole(input: { userId: string; role: UserRole }): Promise<ActionResult> {

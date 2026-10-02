@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect } from "@/components/ui/native-select";
-import { saveProblem } from "@/app/instructor/problems/actions";
+import { saveProblem } from "@/app/admin/problems/actions";
 import { problemSchema, type ProblemInput } from "@/services/instructor/schemas";
 import { CODE_LANGUAGES, PROBLEM_DIFFICULTIES, slugify, titleCase } from "@/services/instructor/utils";
 import { cn } from "@/lib/utils";
@@ -53,7 +53,7 @@ export function ProblemForm({ initial, topics }: { initial: CodingProblem | null
   async function onSubmit(values: ProblemInput) {
     const res = await saveProblem(initial?.id ?? null, values);
     if (!toastResult(res, "Saved")) return;
-    if (!initial && res.data) router.push(`/instructor/problems/${res.data.id}`);
+    if (!initial && res.data) router.push(`/admin/problems/${res.data.id}`);
     else router.refresh();
   }
 

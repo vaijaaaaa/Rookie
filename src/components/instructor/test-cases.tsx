@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { createTestCase, deleteTestCase, moveTestCase, updateTestCase } from "@/app/instructor/problems/actions";
+import { createTestCase, deleteTestCase, moveTestCase, updateTestCase } from "@/app/admin/problems/actions";
 import { testCaseSchema, type TestCaseInput } from "@/services/instructor/schemas";
 import type { TestCase } from "@/types";
 import { ConfirmAction } from "./confirm-action";

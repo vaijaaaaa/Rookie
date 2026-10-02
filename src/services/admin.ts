@@ -54,7 +54,7 @@ export const ACTIVITY_LABELS: Record<ActivityType, string> = {
   achievement_unlocked: "Achievements",
 };
 
-export const ROLES: UserRole[] = ["student", "instructor", "admin"];
+export const ROLES: UserRole[] = ["student", "admin"];
 
 export function isUserRole(v: unknown): v is UserRole {
   return typeof v === "string" && (ROLES as string[]).includes(v);
@@ -115,9 +115,13 @@ export function attendanceSeries(rows: { week: string; rate: number }[]) {
 
 export async function getPlatformStats(): Promise<PlatformStats> {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("get_platform_stats");
+  const [{ data, error }, admins] = await Promise.all([
+    supabase.rpc("get_platform_stats"),
+    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "admin"),
+  ]);
   if (error || !data) return EMPTY_STATS;
-  return { ...EMPTY_STATS, ...(data as Partial<PlatformStats>) };
+  // Two roles only: the "instructors" figure is the admin count.
+  return { ...EMPTY_STATS, ...(data as Partial<PlatformStats>), total_instructors: admins.count ?? 0 };
 }
 
 export async function getRecentSignups(limit = 5) {
@@ -138,13 +142,8 @@ export async function getRoleCounts(): Promise<Record<UserRole | "all", number>>
     if (role) q = q.eq("role", role);
     return q.then((r) => r.count ?? 0);
   };
-  const [all, student, instructor, admin] = await Promise.all([
-    count(),
-    count("student"),
-    count("instructor"),
-    count("admin"),
-  ]);
-  return { all, student, instructor, admin };
+  const [all, student, admin] = await Promise.all([count(), count("student"), count("admin")]);
+  return { all, student, admin };
 }
 
 export async function listUsers({ page, q, role }: UserListParams) {

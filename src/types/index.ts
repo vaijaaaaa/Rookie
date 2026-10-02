@@ -1,6 +1,6 @@
 // Domain types mirroring supabase/migrations. Keep in sync with the schema.
 
-export type UserRole = "student" | "instructor" | "admin";
+export type UserRole = "student" | "admin";
 export type LearningGoal =
   | "software_developer" | "full_stack_developer" | "backend_developer"
   | "frontend_developer" | "data_engineer" | "ai_engineer" | "cs_fundamentals";

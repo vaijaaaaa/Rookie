@@ -18,11 +18,11 @@ import {
 export const metadata = { title: "Admin" };
 
 const QUICK_LINKS = [
-  { title: "Courses", href: "/instructor/courses", icon: BookOpen, hint: "Lessons, modules, publishing" },
-  { title: "Roadmaps", href: "/instructor/roadmaps", icon: Map, hint: "Learning paths & topics" },
-  { title: "Classes", href: "/instructor/classes", icon: Video, hint: "Live sessions & recordings" },
-  { title: "Problems", href: "/instructor/problems", icon: Code2, hint: "Coding practice & tests" },
-  { title: "Announcements", href: "/instructor/announcements", icon: Megaphone, hint: "Platform-wide updates" },
+  { title: "Courses", href: "/admin/courses", icon: BookOpen, hint: "Lessons, modules, publishing" },
+  { title: "Roadmaps", href: "/admin/roadmaps", icon: Map, hint: "Learning paths & topics" },
+  { title: "Classes", href: "/admin/classes", icon: Video, hint: "Live sessions & recordings" },
+  { title: "Problems", href: "/admin/problems", icon: Code2, hint: "Coding practice & tests" },
+  { title: "Announcements", href: "/admin/announcements", icon: Megaphone, hint: "Platform-wide updates" },
 ];
 
 export default async function AdminDashboardPage() {
@@ -46,7 +46,7 @@ export default async function AdminDashboardPage() {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard label="Students" value={stats.total_students.toLocaleString()} icon={GraduationCap} />
-        <StatCard label="Instructors" value={stats.total_instructors.toLocaleString()} icon={Users} />
+        <StatCard label="Admins" value={stats.total_instructors.toLocaleString()} icon={Users} />
         <StatCard label="Active courses" value={stats.active_courses.toLocaleString()} hint="Published" icon={BookOpen} />
         <StatCard
           label="Classes this week"

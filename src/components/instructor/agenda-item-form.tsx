@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
-import { addCohortAgendaItem } from "@/app/instructor/agendas/actions";
+import { addCohortAgendaItem } from "@/app/admin/agendas/actions";
 import { AGENDA_ITEM_TYPES, PRIORITIES } from "@/services/instructor/utils";
 import type { AgendaItemType, Priority } from "@/types";
 import { toastResult } from "./form-utils";

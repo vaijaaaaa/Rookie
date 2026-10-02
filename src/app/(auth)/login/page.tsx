@@ -15,7 +15,7 @@ const ERRORS: Record<string, string> = {
   confirm: "We couldn't confirm your email. The link may have expired.",
 };
 
-const DEMO = ["student@rookie.dev", "instructor@rookie.dev", "admin@rookie.dev"];
+const DEMO = ["student@rookie.dev", "admin@rookie.dev"];
 
 export default async function LoginPage({
   searchParams,

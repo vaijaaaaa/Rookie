@@ -43,7 +43,7 @@ Browser ──► Next.js (Server Components / Server Actions) ──► Supabas
 - **Authorization lives in the database.** Every table has RLS enabled; anything not explicitly
   allowed is denied. The UI also hides actions by role, and server actions re-check roles for
   better error messages, but the source of truth is `supabase/migrations/*_rls.sql`.
-- **Roles** are a `user_role` enum on `profiles` (`student`, `instructor`, `admin`). New users are
+- **Roles** are `student` and `admin` (a `user_role` enum on `profiles`). New users are
   always students. A trigger blocks role changes unless the caller is an admin; admins use the
   `admin_set_role` RPC.
 - **One activity system.** Domain tables fire triggers (`student_progress`, `coding_submissions`,
@@ -63,7 +63,7 @@ Browser ──► Next.js (Server Components / Server Actions) ──► Supabas
 - **Assignment statuses**: `not started` = no submission row; `in_progress`/`submitted`/`reviewed`
   are stored; `late` is derived from `due_at`. A trigger prevents students from grading themselves
   or editing reviewed work, and limits staff to grading fields.
-- **Daily agenda** = personal agendas (`owner_id`) + cohort agendas created by instructors for a
+- **Daily agenda** = personal agendas (`owner_id`) + cohort agendas created by admins for a
   course (`course_id`). Per-student completion lives in `agenda_item_progress`, so one cohort item
   can be completed individually by each student. Classes and assignment deadlines for the day are
   merged in at read time — no duplicated rows.
@@ -106,8 +106,7 @@ src/
       (protected)/        signed-in only (and onboarded students)
         dashboard/ agenda/ attendance/ assignments/ practice/ progress/
         notes/ achievements/ class/[id]/ profile/ settings/ notifications/
-    instructor/           instructor (and admin) workspace
-    admin/                admin-only dashboard, users, analytics, settings
+    admin/                admin workspace: teaching, classes, attendance, content, users, analytics, settings
   components/
     ui/                   design-system primitives (shadcn-style)
     shared/               PageHeader, Section, StatCard, EmptyState, Markdown, badges…
@@ -123,7 +122,7 @@ src/
   types/                  domain types mirroring the schema
   proxy.ts                refreshes Supabase session, redirects anonymous users from protected routes
 supabase/
-  migrations/             0001 schema · 0002 functions & triggers · 0003 RLS · 0004 trigger fixes
+  migrations/             0001 schema · 0002 functions & triggers · 0003 RLS · 0004 trigger fixes · 0005 two roles
   seed.sql                realistic demo data (users, courses, lessons, roadmaps, classes…)
 scripts/
   validate-db.mjs         runs migrations + seed in PGlite (in-process Postgres) as a smoke test
@@ -138,7 +137,7 @@ docs/CONVENTIONS.md       engineering conventions
 2. **Apply the migrations** — either:
    - **SQL editor**: open *SQL Editor* and run, in order,
      `supabase/migrations/20261002000001_schema.sql`, `…0002_functions.sql`, `…0003_rls.sql`,
-     `…0004_trigger_fixes.sql`; or
+     `…0004_trigger_fixes.sql`, `…0005_admin_student_roles.sql`; or
    - **CLI**:
      ```bash
      npx supabase login
@@ -159,7 +158,7 @@ docs/CONVENTIONS.md       engineering conventions
 | Role       | Email                  | Password      |
 |------------|------------------------|---------------|
 | Student    | student@rookie.dev     | `Rookie@2026` |
-| Instructor | instructor@rookie.dev  | `Rookie@2026` |
+| Admin (teacher) | instructor@rookie.dev  | `Rookie@2026` |
 | Admin      | admin@rookie.dev       | `Rookie@2026` |
 
 > ⚠️ These are development credentials. Delete or change them before going to production.
@@ -215,17 +214,24 @@ Deploy to Vercel (or any Node host):
 
 ## Roles
 
-| Capability | Student | Instructor | Admin |
-|---|:-:|:-:|:-:|
-| Dashboard, agenda, roadmaps, courses, lessons, practice, progress, notes, achievements | ✓ | ✓ | ✓ |
-| Read own attendance / submissions / notifications | ✓ | ✓ | ✓ |
-| Modify attendance | ✗ | own classes | all |
-| Create/edit courses, modules, lessons | ✗ | own courses | all |
-| Roadmaps, coding problems | ✗ | own | all |
-| Schedule classes, take attendance | ✗ | own | all |
-| Assignments: create, review, grade | ✗ | own courses | all |
-| Announcements, cohort agendas | ✗ | ✓ | ✓ |
-| Manage users & roles, platform settings, platform analytics | ✗ | ✗ | ✓ |
+There are two roles: **student** and **admin**. Admins teach *and* run the platform — they
+create courses, lessons, roadmaps and problems, schedule classes, take attendance, grade
+assignments, post announcements and cohort agendas, and manage users and settings. Every
+`/admin/*` page requires the admin role, and every write is enforced by RLS (`is_admin()`).
+
+| Capability | Student | Admin |
+|---|:-:|:-:|
+| Dashboard, agenda, roadmaps, courses, lessons, practice, progress, notes, achievements | ✓ | ✓ |
+| Read own attendance / submissions / notifications | ✓ | ✓ |
+| Modify attendance | ✗ | ✓ |
+| Create/edit courses, modules, lessons, roadmaps, coding problems | ✗ | ✓ |
+| Schedule classes, take attendance | ✗ | ✓ |
+| Assignments: create, review, grade | ✗ | ✓ |
+| Announcements, cohort agendas | ✗ | ✓ |
+| Manage users & roles, platform settings, analytics | ✗ | ✓ |
+
+> The database enum still contains `instructor` for compatibility, but migration `0005`
+> converts existing instructors to admins and a check constraint prevents the value from being used.
 
 ## Known limitations / next steps
 

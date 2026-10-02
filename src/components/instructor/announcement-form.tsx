@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
-import { saveAnnouncement } from "@/app/instructor/announcements/actions";
+import { saveAnnouncement } from "@/app/admin/announcements/actions";
 import type { Announcement } from "@/types";
 import { toastResult } from "./form-utils";
 

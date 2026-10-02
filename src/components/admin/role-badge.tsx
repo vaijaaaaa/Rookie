@@ -3,7 +3,6 @@ import type { UserRole } from "@/types";
 
 const MAP: Record<UserRole, { label: string; variant: "success" | "info" | "outline" }> = {
   admin: { label: "Admin", variant: "success" },
-  instructor: { label: "Instructor", variant: "info" },
   student: { label: "Student", variant: "outline" },
 };
 

@@ -12,9 +12,9 @@ export interface StaffContext {
   isAdmin: boolean;
 }
 
-/** For Server Components under /instructor: redirects non-staff away. */
+/** For Server Components under /admin: redirects non-admins away. */
 export async function requireStaff(): Promise<StaffContext> {
-  const profile = await requireRole(["instructor", "admin"]);
+  const profile = await requireRole(["admin"]);
   const supabase = await createClient();
   return { supabase, profile, isAdmin: profile.role === "admin" };
 }
@@ -22,7 +22,7 @@ export async function requireStaff(): Promise<StaffContext> {
 /** For Server Actions: returns null instead of redirecting. */
 export async function staffContext(): Promise<StaffContext | null> {
   const profile = await getProfile();
-  if (!profile || (profile.role !== "instructor" && profile.role !== "admin")) return null;
+  if (!profile || (profile.role !== "admin")) return null;
   const supabase = await createClient();
   return { supabase, profile, isAdmin: profile.role === "admin" };
 }
@@ -32,7 +32,7 @@ export async function withStaff<T = undefined>(
   fn: (ctx: StaffContext) => Promise<ActionResult<T>>,
 ): Promise<ActionResult<T>> {
   const ctx = await staffContext();
-  if (!ctx) return { ok: false, error: "You need an instructor or admin account to do that." };
+  if (!ctx) return { ok: false, error: "You need an admin account to do that." };
   try {
     return await fn(ctx);
   } catch (err) {

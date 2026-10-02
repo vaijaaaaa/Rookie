@@ -22,7 +22,6 @@ type SP = Promise<{ page?: string; q?: string; role?: string }>;
 const TABS: { role: UserRole | null; label: string }[] = [
   { role: null, label: "All" },
   { role: "student", label: "Students" },
-  { role: "instructor", label: "Instructors" },
   { role: "admin", label: "Admins" },
 ];
 
@@ -44,7 +43,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: S
   const [{ users, total, error }, counts] = await Promise.all([listUsers({ page, q, role }), getRoleCounts()]);
 
   const heading =
-    role === "instructor" ? "Manage instructors" : role === "student" ? "Manage students" : role === "admin" ? "Admins" : "Users";
+    role === "student" ? "Manage students" : role === "admin" ? "Admins" : "Users";
 
   return (
     <div className="space-y-4">

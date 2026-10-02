@@ -10,8 +10,8 @@
 --
 -- Demo accounts (password for all: Rookie@2026)
 --   admin@rookie.dev        Ada Admin          admin
---   instructor@rookie.dev   Linus Mentor       instructor
---   instructor2@rookie.dev  Grace Hopper-Lee   instructor
+--   instructor@rookie.dev   Linus Mentor       admin (teaches Java, OOP, OS, backend)
+--   instructor2@rookie.dev  Grace Hopper-Lee   admin (teaches DSA, DBMS, networks…)
 --   student@rookie.dev      Vaiju              student (main demo account)
 --   priya|arjun|sofia|kenji|amara|liam|zara|diego @rookie.dev   students
 --
@@ -88,9 +88,9 @@ create table rookie_seed.users (
 insert into rookie_seed.users values
   ('11111111-0000-4000-8000-000000000001', 'admin@rookie.dev', 'Ada Admin', 'admin', 84,
    'ada', 'Runs the Rookie platform. Ask me about anything that is not working.', null, null, '{}'),
-  ('11111111-0000-4000-8000-000000000002', 'instructor@rookie.dev', 'Linus Mentor', 'instructor', 82,
+  ('11111111-0000-4000-8000-000000000002', 'instructor@rookie.dev', 'Linus Mentor', 'admin', 82,
    'linus', 'Backend engineer for 12 years. Teaches Java, OOP, operating systems and backend.', null, null, '{java,backend,linux}'),
-  ('11111111-0000-4000-8000-000000000003', 'instructor2@rookie.dev', 'Grace Hopper-Lee', 'instructor', 80,
+  ('11111111-0000-4000-8000-000000000003', 'instructor2@rookie.dev', 'Grace Hopper-Lee', 'admin', 80,
    'grace', 'Former compiler engineer. Teaches DSA, databases, networks, frontend and system design.', null, null, '{dsa,databases,distributed-systems}'),
   ('11111111-0000-4000-8000-000000000010', 'student@rookie.dev', 'Vaiju', 'student', 42,
    'vaiju', 'Aspiring full stack developer. Currently deep in Java and DSA.', 'full_stack_developer', 'beginner', '{java,web,dsa}'),

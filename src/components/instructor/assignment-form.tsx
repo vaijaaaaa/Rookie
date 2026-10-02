@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import { saveAssignment } from "@/app/instructor/assignments/actions";
+import { saveAssignment } from "@/app/admin/assignments/actions";
 import { assignmentSchema } from "@/services/instructor/schemas";
 import { isoToLocalInput, localInputToIso } from "@/services/instructor/time";
 import { SUBMISSION_TYPES, titleCase } from "@/services/instructor/utils";
@@ -54,7 +54,7 @@ export function AssignmentForm({
   async function onSubmit({ due_at_local, ...values }: FormValues) {
     const res = await saveAssignment(initial?.id ?? null, { ...values, due_at: localInputToIso(due_at_local) });
     if (!toastResult(res, "Saved")) return;
-    if (!initial && res.data) router.push(`/instructor/assignments/${res.data.id}`);
+    if (!initial && res.data) router.push(`/admin/assignments/${res.data.id}`);
     else router.refresh();
   }
 

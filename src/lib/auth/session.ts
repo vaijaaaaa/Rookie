@@ -35,6 +35,5 @@ export async function requireRole(roles: UserRole[]): Promise<Profile> {
 
 export function homeForRole(role: UserRole): string {
   if (role === "admin") return "/admin";
-  if (role === "instructor") return "/instructor";
   return "/dashboard";
 }

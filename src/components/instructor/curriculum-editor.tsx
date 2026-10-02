@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { EmptyState } from "@/components/shared/empty-state";
 import {
   createLesson, createModule, deleteLesson, deleteModule, moveLesson, moveModule, updateModule,
-} from "@/app/instructor/courses/actions";
+} from "@/app/admin/courses/actions";
 import { moduleSchema, newLessonSchema, type ModuleInput, type NewLessonInput } from "@/services/instructor/schemas";
 import { slugify } from "@/services/instructor/utils";
 import { Field } from "./field";
@@ -86,7 +86,7 @@ function NewLessonDialog({ moduleId }: { moduleId: string }) {
     const res = await createLesson(moduleId, values);
     if (toastResult(res, "Lesson created") && res.data) {
       setOpen(false);
-      router.push(`/instructor/courses/${res.data.courseId}/lessons/${res.data.id}`);
+      router.push(`/admin/courses/${res.data.courseId}/lessons/${res.data.id}`);
     }
   }
   return (
@@ -173,14 +173,14 @@ export function CurriculumEditor({ courseId, modules }: { courseId: string; modu
                 {m.lessons.map((l, li) => (
                   <li key={l.id} className="flex items-center gap-2 px-3 py-1.5">
                     <FileText className="size-4 shrink-0 text-muted-foreground" />
-                    <Link href={`/instructor/courses/${courseId}/lessons/${l.id}`} className="min-w-0 flex-1 truncate text-sm hover:underline">
+                    <Link href={`/admin/courses/${courseId}/lessons/${l.id}`} className="min-w-0 flex-1 truncate text-sm hover:underline">
                       {l.title}
                     </Link>
                     {!l.is_published ? <Badge variant="outline">Draft</Badge> : null}
                     <span className="hidden font-mono text-[11px] text-muted-foreground sm:inline">{l.estimated_minutes}m</span>
                     <MoveButtons action={moveLesson.bind(null, l.id)} isFirst={li === 0} isLast={li === m.lessons.length - 1} label="lesson" />
                     <Button asChild variant="ghost" size="icon-sm" aria-label="Edit lesson">
-                      <Link href={`/instructor/courses/${courseId}/lessons/${l.id}`}>
+                      <Link href={`/admin/courses/${courseId}/lessons/${l.id}`}>
                         <Pencil />
                       </Link>
                     </Button>

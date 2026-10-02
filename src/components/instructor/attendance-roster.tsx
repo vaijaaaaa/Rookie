@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/shared/empty-state";
-import { saveAttendance } from "@/app/instructor/attendance/actions";
+import { saveAttendance } from "@/app/admin/attendance/actions";
 import { ATTENDANCE_STATUSES } from "@/services/instructor/utils";
 import { cn } from "@/lib/utils";
 import type { AttendanceStatus } from "@/types";

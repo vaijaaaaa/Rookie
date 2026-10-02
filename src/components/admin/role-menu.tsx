@@ -16,8 +16,7 @@ import type { UserRole } from "@/types";
 
 const ROLE_OPTIONS: { value: UserRole; label: string; hint: string }[] = [
   { value: "student", label: "Student", hint: "Learns, submits work" },
-  { value: "instructor", label: "Instructor", hint: "Manages courses & classes" },
-  { value: "admin", label: "Admin", hint: "Full platform access" },
+  { value: "admin", label: "Admin", hint: "Teaches & manages the platform" },
 ];
 
 /** Change a user's role: dropdown → confirm dialog → server action. */
@@ -96,10 +95,8 @@ export function RoleMenu({
               {userName} will become {target === "admin" ? "an" : "a"}{" "}
               <span className="font-medium text-foreground">{target}</span>
               {target === "admin"
-                ? " with full access to users, settings and all content."
-                : target === "instructor"
-                  ? " and gain access to the instructor workspace."
-                  : " and lose staff access."}
+                ? " with full access to users, content, classes and settings."
+                : " and lose admin access."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect } from "@/components/ui/native-select";
-import { saveClass } from "@/app/instructor/classes/actions";
+import { saveClass } from "@/app/admin/classes/actions";
 import { classSchema } from "@/services/instructor/schemas";
 import { isoToLocalInput, localInputToIso } from "@/services/instructor/time";
 import { CLASS_STATUSES, titleCase } from "@/services/instructor/utils";
@@ -66,7 +66,7 @@ export function ClassForm({
   async function onSubmit({ starts_at_local, ...values }: FormValues) {
     const res = await saveClass(initial?.id ?? null, { ...values, starts_at: localInputToIso(starts_at_local) });
     if (!toastResult(res, initial ? "Class updated" : "Class scheduled")) return;
-    if (!initial && res.data) router.push(`/instructor/classes/${res.data.id}`);
+    if (!initial && res.data) router.push(`/admin/classes/${res.data.id}`);
     else router.refresh();
   }
 

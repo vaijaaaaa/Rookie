@@ -15,7 +15,7 @@ export function UpcomingClasses({ classes }: { classes: LandingClass[] }) {
           id="classes-title"
           eyebrow="Live classes"
           title="Learn it live, then make it yours."
-          description="Instructors teach each module in a live session. Recordings, agendas and resources stay attached to the class afterwards, and attendance is tracked for you."
+          description="Mentors teach each module in a live session. Recordings, agendas and resources stay attached to the class afterwards, and attendance is tracked for you."
           className="mb-0 sm:flex-col sm:items-start"
           action={
             <Button asChild variant="outline" size="sm">

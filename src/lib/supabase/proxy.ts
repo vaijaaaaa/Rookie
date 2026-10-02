@@ -5,7 +5,7 @@ import { SUPABASE_KEY, SUPABASE_URL } from "./env";
 const PROTECTED_PREFIXES = [
   "/dashboard", "/agenda", "/attendance", "/progress", "/practice", "/assignments",
   "/notes", "/achievements", "/profile", "/settings", "/onboarding", "/notifications",
-  "/class/", "/instructor", "/admin", "/learn",
+  "/class/", "/admin/teaching", "/admin", "/learn",
 ];
 
 /** Refreshes the auth session cookie and does an optimistic auth redirect. */

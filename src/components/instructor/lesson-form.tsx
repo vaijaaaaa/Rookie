@@ -5,7 +5,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { saveLesson } from "@/app/instructor/courses/actions";
+import { saveLesson } from "@/app/admin/courses/actions";
 import { lessonSchema, type LessonInput } from "@/services/instructor/schemas";
 import type { Lesson } from "@/types";
 import { Field, FormSection } from "./field";

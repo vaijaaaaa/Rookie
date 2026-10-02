@@ -6,7 +6,7 @@ import { Loader2, Plus, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import { createResource, deleteResource, moveResource, updateResource } from "@/app/instructor/courses/actions";
+import { createResource, deleteResource, moveResource, updateResource } from "@/app/admin/courses/actions";
 import { resourceSchema, type ResourceInput } from "@/services/instructor/schemas";
 import { RESOURCE_KINDS, titleCase } from "@/services/instructor/utils";
 import type { LessonResource } from "@/types";

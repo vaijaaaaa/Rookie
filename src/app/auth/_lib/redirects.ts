@@ -17,7 +17,6 @@ export function safeNextPath(next: string | null | undefined): string | null {
 export function landingFor(profile: Pick<Profile, "role" | "onboarded_at"> | null): string {
   if (!profile) return "/dashboard";
   if (profile.role === "admin") return "/admin";
-  if (profile.role === "instructor") return "/instructor";
   return profile.onboarded_at ? "/dashboard" : "/onboarding";
 }
 

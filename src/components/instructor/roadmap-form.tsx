@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect } from "@/components/ui/native-select";
-import { saveRoadmap } from "@/app/instructor/roadmaps/actions";
+import { saveRoadmap } from "@/app/admin/roadmaps/actions";
 import { roadmapSchema, type RoadmapInput } from "@/services/instructor/schemas";
 import { DIFFICULTIES, LEARNING_GOALS, slugify, titleCase } from "@/services/instructor/utils";
 import { LABELS } from "@/lib/utils/format";
@@ -40,7 +40,7 @@ export function RoadmapForm({ initial }: { initial: Roadmap | null }) {
   async function onSubmit(values: RoadmapInput) {
     const res = await saveRoadmap(initial?.id ?? null, values);
     if (!toastResult(res, "Saved")) return;
-    if (!initial && res.data) router.push(`/instructor/roadmaps/${res.data.id}`);
+    if (!initial && res.data) router.push(`/admin/roadmaps/${res.data.id}`);
     else router.refresh();
   }
 

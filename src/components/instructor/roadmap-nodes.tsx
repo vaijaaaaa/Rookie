@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/shared/empty-state";
-import { createNode, deleteNode, moveNode, updateNode } from "@/app/instructor/roadmaps/actions";
+import { createNode, deleteNode, moveNode, updateNode } from "@/app/admin/roadmaps/actions";
 import { roadmapNodeSchema, type RoadmapNodeInput } from "@/services/instructor/schemas";
 import type { RoadmapNode } from "@/types";
 import { Field } from "./field";

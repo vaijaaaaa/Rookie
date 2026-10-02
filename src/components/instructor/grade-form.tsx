@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { gradeSubmission } from "@/app/instructor/assignments/actions";
+import { gradeSubmission } from "@/app/admin/assignments/actions";
 import { gradeSchema } from "@/services/instructor/schemas";
 import { Field } from "./field";
 import { FormFooter } from "./form-footer";

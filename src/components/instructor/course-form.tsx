@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect } from "@/components/ui/native-select";
-import { saveCourse } from "@/app/instructor/courses/actions";
+import { saveCourse } from "@/app/admin/courses/actions";
 import { courseSchema, type CourseInput } from "@/services/instructor/schemas";
 import { DIFFICULTIES, slugify, titleCase } from "@/services/instructor/utils";
 import type { Course } from "@/types";
@@ -50,7 +50,7 @@ export function CourseForm({
   async function onSubmit(values: CourseInput) {
     const res = await saveCourse(initial?.id ?? null, values);
     if (!toastResult(res, "Saved")) return;
-    if (!initial && res.data) router.push(`/instructor/courses/${res.data.id}`);
+    if (!initial && res.data) router.push(`/admin/courses/${res.data.id}`);
     else router.refresh();
   }
 

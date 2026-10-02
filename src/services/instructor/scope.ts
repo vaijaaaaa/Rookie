@@ -68,13 +68,13 @@ export interface PersonOption {
   email: string | null;
 }
 
-/** Instructors and admins — for admins assigning ownership. */
+/** Admins — for assigning which admin teaches a course or class. */
 export async function getStaffOptions(ctx: StaffContext): Promise<PersonOption[]> {
   if (!ctx.isAdmin) return [];
   const { data } = await ctx.supabase
     .from("profiles")
     .select("id, full_name, email")
-    .in("role", ["instructor", "admin"])
+    .eq("role", "admin")
     .order("full_name")
     .overrideTypes<PersonOption[], { merge: false }>();
   return data ?? [];
