@@ -18,9 +18,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="w-full max-w-sm">{children}</div>
       </main>
       <footer className="relative pb-6 text-center font-mono text-[11px] text-muted-foreground">
-        <Link href="/about" className="hover:text-foreground">about</Link>
+        <Link href="/" className="hover:text-foreground">home</Link>
         <span className="px-2" aria-hidden>·</span>
-        <Link href="/pricing" className="hover:text-foreground">pricing</Link>
+        <Link href="/about" className="hover:text-foreground">about</Link>
       </footer>
     </div>
   );

@@ -19,7 +19,6 @@ export function SiteFooter() {
           <Link href="/roadmaps" className="hover:text-foreground">Roadmaps</Link>
           <Link href="/about" className="hover:text-foreground">About</Link>
           <Link href="/courses" className="hover:text-foreground">Courses</Link>
-          <Link href="/pricing" className="hover:text-foreground">Pricing</Link>
           <Link href="/classes" className="hover:text-foreground">Classes</Link>
           <Link href="/login" className="hover:text-foreground">Log in</Link>
         </div>

@@ -6,7 +6,7 @@
 // schema is created first, so the migrations and the seed run unmodified.
 import { PGlite } from '@electric-sql/pglite';
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -108,9 +108,31 @@ for (const f of readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).sor
 }
 if (!seedOnly) process.exit(0);
 
-const seed = readFileSync(seedPath, 'utf8');
-await run('seed.sql', seed);
-if (runSeedTwice) await run('seed.sql (re-run)', seed);
+// Optional local dev seed (not committed — production starts empty).
+if (existsSync(seedPath)) {
+  const seed = readFileSync(seedPath, 'utf8');
+  await run('seed.sql', seed);
+  if (runSeedTwice) await run('seed.sql (re-run)', seed);
+}
+
+// Content scripts (supabase/content/*.sql) — run twice to prove they are re-runnable.
+const contentDir = join(root, 'supabase', 'content');
+if (existsSync(contentDir)) {
+  for (const f of readdirSync(contentDir).filter((f) => f.endsWith('.sql')).sort()) {
+    const sql = readFileSync(join(contentDir, f), 'utf8');
+    await run(`content ${f}`, sql);
+    await run(`content ${f} (re-run)`, sql);
+  }
+  const { rows } = await db.query(`select r.slug, count(*) filter (where n.kind = 'section')::int sections,
+      count(*) filter (where n.kind = 'topic')::int topics
+    from public.roadmaps r join public.roadmap_nodes n on n.roadmap_id = r.id group by r.slug order by r.slug`);
+  console.log('\nContent roadmaps:', JSON.stringify(rows));
+}
+
+// Minimal fixtures so the permission tests below always have an admin and a student.
+await db.exec(`select set_config('request.jwt.claim.sub', '', false)`);
+await db.query(`select public.admin_create_user('fixture.admin@test.dev', 'Fixture Admin', 'password123', 'admin')`);
+await db.query(`select public.admin_create_user('fixture.student@test.dev', 'Fixture Student', 'password123', 'student')`);
 
 // ---------------------------------------------------------------------------
 // Report
@@ -199,26 +221,29 @@ if (admin) {
   if (!ok) throw new Error('user management checks failed');
 }
 
-// --- demo cleanup (supabase/cleanup-demo-users.sql) --------------------------
-if (process.argv.includes('--cleanup')) {
-  const cleanup = readFileSync(join(root, 'supabase', 'cleanup-demo-users.sql'), 'utf8');
-  let refused = false;
-  try { await db.exec(cleanup); } catch (e) { refused = /No non-demo admin/.test(String(e.message)); }
-  await db.query(`select public.admin_create_user('real.admin@example.com', 'Real Admin', 'password123', 'admin')`);
-  await db.exec(cleanup);
-  const { rows: [left] } = await db.query(`select
-      (select count(*)::int from auth.users where email like '%@rookie.dev') demo_users,
-      (select count(*)::int from public.profiles) profiles,
-      (select count(*)::int from public.courses) courses,
-      (select count(*)::int from public.lessons) lessons,
-      (select count(*)::int from public.coding_problems) problems,
-      (select count(*)::int from public.classes) classes,
-      (select count(*)::int from public.attendance) attendance,
-      (select count(*)::int from public.activity_logs) activity`);
-  console.log('\nDemo cleanup:', JSON.stringify({ refusedWithoutAdmin: refused, ...left }));
-  if (!refused || left.demo_users !== 0 || left.profiles !== 1 || left.courses === 0) throw new Error('cleanup check failed');
-}
 
+// --- payments ledger RLS (0008) ---------------------------------------------
+{
+  const { rows: [adm] } = await db.query(`select id from public.profiles where email = 'fixture.admin@test.dev'`);
+  const { rows: [stu] } = await db.query(`select id from public.profiles where email = 'fixture.student@test.dev'`);
+  const { rows: [other] } = await db.query(`select public.admin_create_user('other.student@test.dev', 'Other', 'password123', 'student') as id`);
+  await db.exec(`grant usage on schema public to authenticated; grant select, insert, update, delete on public.student_payments to authenticated;`);
+  const as = async (id, sql, params = []) => {
+    await db.exec(`set role authenticated; select set_config('request.jwt.claim.sub', '${id}', false)`);
+    try { return await db.query(sql, params); } finally { await db.exec(`reset role; select set_config('request.jwt.claim.sub', '', false)`); }
+  };
+  let studentInsertBlocked = false;
+  try { await as(stu.id, `insert into public.student_payments (user_id, period, amount) values ($1, '2026-10-01', 500)`, [stu.id]); }
+  catch { studentInsertBlocked = true; }
+  await as(adm.id, `insert into public.student_payments (user_id, period, amount, method, recorded_by) values ($1, '2026-10-01', 2500, 'upi', $2), ($3, '2026-10-01', 2500, 'cash', $2)`, [stu.id, adm.id, other.id]);
+  const { rows: mine } = await as(stu.id, `select user_id from public.student_payments`);
+  const { rows: all } = await as(adm.id, `select user_id from public.student_payments`);
+  let badPeriod = false;
+  try { await as(adm.id, `insert into public.student_payments (user_id, period, amount) values ($1, '2026-10-15', 100)`, [stu.id]); } catch { badPeriod = true; }
+  const ok = studentInsertBlocked && mine.length === 1 && mine[0].user_id === stu.id && all.length === 2 && badPeriod;
+  console.log('\nPayments:', JSON.stringify({ studentInsertBlocked, studentSeesOnlyOwn: mine.length === 1, adminSeesAll: all.length, midMonthPeriodRejected: badPeriod }));
+  if (!ok) throw new Error('payments checks failed');
+}
 // --- full reset (supabase/reset-all-data.sql) --------------------------------
 if (process.argv.includes('--reset')) {
   const reset = readFileSync(join(root, 'supabase', 'reset-all-data.sql'), 'utf8');

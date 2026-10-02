@@ -1,6 +1,6 @@
 import {
   Award, BarChart3, BookOpen, CalendarCheck, CalendarDays, ClipboardList, Code2, GraduationCap,
-  LayoutDashboard, Map, Megaphone, NotebookPen, Settings, TrendingUp, User, UserCog, Users, Video,
+  LayoutDashboard, Map, Megaphone, NotebookPen, Settings, TrendingUp, User, UserCog, Users, Video, Wallet,
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/types";
@@ -47,6 +47,7 @@ export const NAV: Record<UserRole, { main: NavItem[]; footer: NavItem[] }> = {
       { title: "Agendas", href: "/admin/agendas", icon: CalendarDays },
       { title: "Announcements", href: "/admin/announcements", icon: Megaphone },
       { title: "Users", href: "/admin/users", icon: UserCog },
+      { title: "Payments", href: "/admin/payments", icon: Wallet },
       { title: "Analytics", href: "/admin/analytics", icon: BarChart3, mobile: true },
       { title: "Settings", href: "/admin/settings", icon: Settings },
     ],

@@ -370,3 +370,21 @@ export interface SearchResult {
 export type ActionResult<T = undefined> =
   | { ok: true; data?: T; message?: string }
   | { ok: false; error: string };
+
+export type PaymentMethod = "cash" | "upi" | "bank_transfer" | "card" | "other";
+
+export interface StudentPayment {
+  id: string;
+  user_id: string;
+  /** yyyy-MM-01 */
+  period: string;
+  amount: number;
+  currency: string;
+  method: PaymentMethod;
+  paid_on: string;
+  reference: string | null;
+  note: string | null;
+  recorded_by: string | null;
+  created_at: string;
+  updated_at: string;
+}

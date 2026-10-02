@@ -9,10 +9,13 @@ import { MobileBottomNav, SidebarNav } from "./sidebar-nav";
 import { UserMenu } from "./user-menu";
 import type { Notification, Profile } from "@/types";
 import { homeForRole } from "@/lib/auth/session";
+import { getShellSettings } from "@/lib/settings";
+import { Megaphone, Wrench } from "lucide-react";
 
 /** Authenticated application chrome: sidebar + topbar + content + mobile nav. */
 export async function AppShell({ profile, children }: { profile: Profile; children: React.ReactNode }) {
   const supabase = await createClient();
+  const settingsPromise = getShellSettings();
   const { data: notifications } = await supabase
     .from("notifications")
     .select("*")
@@ -22,6 +25,8 @@ export async function AppShell({ profile, children }: { profile: Profile; childr
     .overrideTypes<Notification[], { merge: false }>();
 
   const home = homeForRole(profile.role);
+  const settings = await settingsPromise;
+  const blocked = settings.maintenanceMode && profile.role !== "admin";
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -42,7 +47,33 @@ export async function AppShell({ profile, children }: { profile: Profile; childr
             <NotificationBell userId={profile.id} initial={notifications ?? []} />
             <UserMenu profile={profile} />
           </header>
-          <main className="flex-1 px-4 pt-6 pb-24 md:px-6 md:pb-10 lg:px-8">{children}</main>
+          {settings.announcementBanner ? (
+            <div role="status" className="flex items-start gap-2 border-b bg-brand/10 px-4 py-2 text-sm md:px-6">
+              <Megaphone className="mt-0.5 size-4 shrink-0 text-brand" />
+              <p className="min-w-0">{settings.announcementBanner}</p>
+            </div>
+          ) : null}
+          {settings.maintenanceMode && profile.role === "admin" ? (
+            <div role="status" className="flex items-center gap-2 border-b bg-warning/10 px-4 py-2 text-sm md:px-6">
+              <Wrench className="size-4 shrink-0 text-warning" />
+              Maintenance mode is on — students currently see a maintenance screen.
+            </div>
+          ) : null}
+          <main className="flex-1 px-4 pt-6 pb-24 md:px-6 md:pb-10 lg:px-8">
+            {blocked ? (
+              <div className="mx-auto flex max-w-md flex-col items-center py-24 text-center">
+                <div className="mb-4 flex size-12 items-center justify-center rounded-lg border bg-muted/50">
+                  <Wrench className="size-6 text-muted-foreground" />
+                </div>
+                <h1 className="text-xl font-semibold tracking-tight">We&apos;ll be right back</h1>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Rookie is down for scheduled maintenance. Your progress is safe — please check back shortly.
+                </p>
+              </div>
+            ) : (
+              children
+            )}
+          </main>
         </div>
         <MobileBottomNav role={profile.role} />
       </div>

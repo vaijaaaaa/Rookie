@@ -73,6 +73,9 @@ Browser ──► Next.js (Server Components / Server Actions) ──► Supabas
   merged in at read time — no duplicated rows.
 - **Roadmap progress** follows lesson progress: a topic linked to a lesson is complete when the
   lesson is; topics without a lesson can be checked off manually.
+- **Payments** are a ledger, not a gateway: admins record monthly fees received (UPI, cash, bank
+  transfer…) per student in **Admin → Payments**, see who has paid for a month, and review totals.
+  Students can read only their own payments (RLS).
 - **Notifications** are created by triggers (new announcement, new assignment, class scheduled,
   assignment reviewed, achievement unlocked, roadmap section finished) and pushed live to the bell
   via Supabase Realtime.
@@ -99,7 +102,7 @@ are trusted — fine for a learning MVP, not for competitive grading.
 ```
 src/
   app/
-    (marketing)/          /, /about, /pricing
+    (marketing)/          /, /about
     (auth)/               /login, /forgot-password, /reset-password (no public signup)
     auth/                 email-link confirm route handler (password recovery)
     onboarding/           3-step onboarding → recommended roadmap
@@ -126,10 +129,13 @@ src/
   types/                  domain types mirroring the schema
   proxy.ts                refreshes Supabase session, redirects anonymous users from protected routes
 supabase/
-  migrations/             0001 schema · 0002 functions & triggers · 0003 RLS · 0004 trigger fixes · 0005 two roles · 0006 admin-managed accounts
-  seed.sql                realistic demo data (users, courses, lessons, roadmaps, classes…)
+  migrations/             0001 schema · 0002 functions & triggers · 0003 RLS · 0004 trigger fixes ·
+                          0005 two roles · 0006 admin-managed accounts · 0007 achievements · 0008 payments
+  content/                optional content scripts (e.g. java-roadmap.sql)
+  bootstrap-admin.sql     creates the first admin account
+  reset-all-data.sql      ⚠️ wipes all users and content (keeps schema)
 scripts/
-  validate-db.mjs         runs migrations + seed in PGlite (in-process Postgres) as a smoke test
+  validate-db.mjs         runs migrations + content in PGlite (in-process Postgres) and checks permissions
 docs/CONVENTIONS.md       engineering conventions
 ```
 
@@ -142,16 +148,15 @@ docs/CONVENTIONS.md       engineering conventions
    - **SQL editor**: open *SQL Editor* and run, in order,
      `supabase/migrations/20261002000001_schema.sql`, `…0002_functions.sql`, `…0003_rls.sql`,
      `…0004_trigger_fixes.sql`, `…0005_admin_student_roles.sql`,
-     `…0006_admin_user_management.sql`; or
+     `…0006_admin_user_management.sql`, `…0007_achievements.sql`, `…0008_payments.sql`; or
    - **CLI**:
      ```bash
      npx supabase login
      npx supabase link --project-ref <your-project-ref>
      npx supabase db push
      ```
-3. **Seed demo data** (development only): run `supabase/seed.sql` in the SQL editor, or
-   `npx supabase db execute --file supabase/seed.sql` / `psql "$DATABASE_URL" -f supabase/seed.sql`.
-   The seed is re-runnable: it deletes its own demo rows first.
+3. **Content (optional)**: run any script in `supabase/content/` — e.g. `java-roadmap.sql` adds a
+   18-section Java Programming roadmap. Scripts are re-runnable.
 4. **Auth settings** (*Authentication*):
    - *Sign In / Providers* → turn **off** "Allow new users to sign up", and leave Google and other
      OAuth providers **disabled**. Rookie has no public signup — accounts are created by admins.
@@ -161,20 +166,6 @@ docs/CONVENTIONS.md       engineering conventions
    password, and run it in the SQL editor (don't commit your real password). Log in with that
    account and add everyone else from **Admin → Users → Add user**.
 6. **Realtime**: the RLS migration adds `notifications` to the `supabase_realtime` publication.
-
-### Demo accounts (from `seed.sql`)
-
-| Role       | Email                  | Password      |
-|------------|------------------------|---------------|
-| Student    | student@rookie.dev     | `Rookie@2026` |
-| Admin (teacher) | instructor@rookie.dev  | `Rookie@2026` |
-| Admin      | admin@rookie.dev       | `Rookie@2026` |
-
-> ⚠️ These are development credentials. Before going live, create your own admin
-> (`supabase/bootstrap-admin.sql`), then delete all demo accounts with
-> `supabase/cleanup-demo-users.sql` — it keeps courses, lessons, roadmaps and problems.
-
-To create your own admin account, run `supabase/bootstrap-admin.sql` (see step 5 above).
 
 ---
 
@@ -208,7 +199,7 @@ Checks:
 npm run typecheck
 npm run lint
 npm run build
-node scripts/validate-db.mjs   # migrations + seed smoke test in PGlite (no Docker needed)
+node scripts/validate-db.mjs   # migrations + content + permission tests in PGlite (no Docker)
 ```
 
 ## Deployment
@@ -217,8 +208,8 @@ Deploy to Vercel (or any Node host):
 
 1. Import the repo, set the environment variables above.
 2. Set `NEXT_PUBLIC_SITE_URL` to the production URL and add it to Supabase Auth redirect URLs.
-3. Apply migrations to the production database (`npx supabase db push`). Do **not** run the seed in
-   production.
+3. Apply migrations to the production database (`npx supabase db push`), then run
+   `supabase/bootstrap-admin.sql` to create your admin.
 
 ---
 
@@ -239,6 +230,7 @@ assignments, post announcements and cohort agendas, and manage users and setting
 | Assignments: create, review, grade | ✗ | ✓ |
 | Announcements, cohort agendas | ✗ | ✓ |
 | Manage users & roles, platform settings, analytics | ✗ | ✓ |
+| Record monthly student payments | ✗ | ✓ |
 
 > The database enum still contains `instructor` for compatibility, but migration `0005`
 > converts existing instructors to admins and a check constraint prevents the value from being used.

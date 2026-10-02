@@ -5,9 +5,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { updatePlatformSettings, type SettingsInput } from "@/app/admin/settings/actions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -35,7 +33,7 @@ function Row({
   );
 }
 
-export function SettingsForm({ initial, timezones }: { initial: SettingsInput; timezones: string[] }) {
+export function SettingsForm({ initial }: { initial: SettingsInput }) {
   const [values, setValues] = useState<SettingsInput>(initial);
   const [saved, setSaved] = useState<SettingsInput>(initial);
   const [pending, startTransition] = useTransition();
@@ -58,40 +56,12 @@ export function SettingsForm({ initial, timezones }: { initial: SettingsInput; t
     });
   }
 
-  const tzOptions = timezones.includes(values.default_timezone) ? timezones : [values.default_timezone, ...timezones];
-
   return (
     <form onSubmit={onSubmit} className="rounded-lg border bg-card">
       <div className="divide-y px-4 py-4">
-        <Row title="Site name" description="Shown in the header, emails and page titles." htmlFor="site_name">
-          <Input
-            id="site_name"
-            value={values.site_name}
-            maxLength={60}
-            onChange={(e) => set("site_name", e.target.value)}
-            required
-          />
-        </Row>
-        <Row
-          title="Default timezone"
-          description="Used for new profiles and for scheduling when a user has no timezone."
-          htmlFor="default_timezone"
-        >
-          <NativeSelect
-            id="default_timezone"
-            value={values.default_timezone}
-            onChange={(e) => set("default_timezone", e.target.value)}
-          >
-            {tzOptions.map((tz) => (
-              <option key={tz} value={tz}>
-                {tz}
-              </option>
-            ))}
-          </NativeSelect>
-        </Row>
         <Row
           title="Announcement banner"
-          description="Optional site-wide message. Leave empty to hide. Max 280 characters."
+          description="Shown at the top of every page for signed-in users. Leave empty to hide."
           htmlFor="announcement_banner"
         >
           <div className="w-full">
@@ -110,7 +80,7 @@ export function SettingsForm({ initial, timezones }: { initial: SettingsInput; t
         </Row>
         <Row
           title="Maintenance mode"
-          description="Flag for showing a maintenance notice to non-admin users."
+          description="Students see a maintenance screen instead of the app. Admins keep full access."
           htmlFor="maintenance_mode"
         >
           <Switch

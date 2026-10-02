@@ -7,18 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { errorMessage } from "@/lib/utils";
 import type { ActionResult } from "@/types";
 
-const isTimeZone = (tz: string) => {
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone: tz });
-    return true;
-  } catch {
-    return false;
-  }
-};
-
 const schema = z.object({
-  site_name: z.string().trim().min(1, "Site name is required").max(60, "Site name is too long"),
-  default_timezone: z.string().refine(isTimeZone, "Unknown timezone"),
   announcement_banner: z.string().trim().max(280, "Banner must be 280 characters or fewer"),
   maintenance_mode: z.boolean(),
 });

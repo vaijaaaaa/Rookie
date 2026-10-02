@@ -16,6 +16,9 @@ import { requireRole } from "@/lib/auth/session";
 import { percent } from "@/lib/utils";
 import { LABELS, formatDate, timeAgo } from "@/lib/utils/format";
 import { ACTIVITY_LABELS, ACTIVITY_TYPES, getUserDetail } from "@/services/admin";
+import { getStudentPayments } from "@/services/payments";
+import { PaymentDialog } from "@/components/admin/payment-dialog";
+import { formatMoney, METHOD_LABEL, monthToPeriod, periodLabel } from "@/lib/utils/money";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -46,6 +49,9 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
   const counted = attended + attendance.absent;
   const attendanceRate = percent(attended, counted);
   const isSelf = profile.id === me.id;
+  const payments = profile.role === "student" ? await getStudentPayments(profile.id) : [];
+  const paidTotal = payments.reduce((sum, p) => sum + p.amount, 0);
+  const thisMonth = monthToPeriod(undefined).slice(0, 7);
 
   return (
     <div className="space-y-6">
@@ -199,6 +205,38 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
           </Section>
         </div>
       </div>
+
+      {profile.role === "student" ? (
+        <Section
+          title={`Payments · ${formatMoney(paidTotal)} total`}
+          contentClassName="p-0"
+          action={
+            <PaymentDialog
+              students={[{ id: profile.id, name: profile.full_name || profile.email || "Student" }]}
+              defaultStudentId={profile.id}
+              defaultMonth={thisMonth}
+              defaultAmount={payments[0]?.amount}
+              trigger="row"
+            />
+          }
+        >
+          {payments.length === 0 ? (
+            <p className="px-4 py-6 text-center text-sm text-muted-foreground">No payments recorded yet.</p>
+          ) : (
+            <ul className="divide-y">
+              {payments.map((p) => (
+                <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+                  <span className="font-medium">{periodLabel(p.period)}</span>
+                  <span className="hidden text-xs text-muted-foreground sm:inline">
+                    {METHOD_LABEL[p.method]} · paid {p.paid_on}{p.reference ? ` · ${p.reference}` : ""}
+                  </span>
+                  <span className="font-mono tabular-nums">{formatMoney(p.amount, p.currency)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Section>
+      ) : null}
     </div>
   );
 }

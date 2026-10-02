@@ -286,15 +286,11 @@ export async function getUserDetail(id: string) {
 }
 
 export interface PlatformSettings {
-  site_name: string;
-  default_timezone: string;
   announcement_banner: string;
   maintenance_mode: boolean;
 }
 
 export const DEFAULT_SETTINGS: PlatformSettings = {
-  site_name: "Rookie",
-  default_timezone: "UTC",
   announcement_banner: "",
   maintenance_mode: false,
 };
