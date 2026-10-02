@@ -218,5 +218,21 @@ if (process.argv.includes('--cleanup')) {
   console.log('\nDemo cleanup:', JSON.stringify({ refusedWithoutAdmin: refused, ...left }));
   if (!refused || left.demo_users !== 0 || left.profiles !== 1 || left.courses === 0) throw new Error('cleanup check failed');
 }
+
+// --- full reset (supabase/reset-all-data.sql) --------------------------------
+if (process.argv.includes('--reset')) {
+  const reset = readFileSync(join(root, 'supabase', 'reset-all-data.sql'), 'utf8');
+  const results = await db.exec(reset);
+  const counts = results.at(-1).rows[0];
+  const { rows: [kept] } = await db.query(`select (select count(*)::int from public.achievements) achievements,
+    (select count(*)::int from public.platform_settings) settings`);
+  // the app must still work afterwards: bootstrap an admin
+  await db.query(`select public.admin_create_user('vaijuwalker111@gmail.com', 'Vaijnath Patil', 'password123', 'admin')`);
+  const { rows: [after] } = await db.query(`select role from public.profiles where email = 'vaijuwalker111@gmail.com'`);
+  console.log('\nFull reset:', JSON.stringify({ ...counts, ...kept, bootstrapRole: after.role }));
+  if (Object.values(counts).some((n) => Number(n) !== 0) || kept.achievements === 0 || after.role !== 'admin') {
+    throw new Error('reset check failed');
+  }
+}
 console.log('\nAll good.');
 await db.close();
