@@ -1,0 +1,234 @@
+# rookie
+
+**Learn Computer Science. Build Real Skills.**
+
+Rookie is a learning platform for CS fundamentals — programming, DSA, databases, operating
+systems, networking, system design and web development. It combines a classroom, a roadmap,
+a coding platform and a personal learning dashboard into one daily loop:
+
+> Open it every morning and immediately know what you're learning today, which class you have,
+> what to practice, how far along your roadmap you are, and what to do next.
+
+---
+
+## Tech stack
+
+| Layer      | Choice |
+|------------|--------|
+| Framework  | Next.js 16 (App Router, Server Components, Server Actions, `proxy.ts`) |
+| Language   | TypeScript (strict) |
+| UI         | React 19, Tailwind CSS v4, shadcn-style components on `radix-ui`, Lucide icons, `sonner` toasts, `cmdk` command menu, Recharts |
+| Forms      | React Hook Form + Zod |
+| Backend    | Supabase — Postgres, Auth, Row Level Security, Realtime |
+| Editor     | CodeMirror 6 (`@uiw/react-codemirror`) |
+
+There is **no separate API server**: `Next.js → Supabase → Postgres`. Business rules that must
+hold no matter who calls (permissions, activity tracking, achievements, streaks) live in Postgres
+as RLS policies, triggers and RPC functions.
+
+---
+
+## Architecture overview
+
+```
+Browser ──► Next.js (Server Components / Server Actions) ──► Supabase (PostgREST + Auth)
+   │                                                               │
+   └── Client Components (browser Supabase client, Realtime) ──────┤
+                                                                   ▼
+                                       Postgres: tables + RLS + triggers + RPCs
+```
+
+### Key decisions
+
+- **Authorization lives in the database.** Every table has RLS enabled; anything not explicitly
+  allowed is denied. The UI also hides actions by role, and server actions re-check roles for
+  better error messages, but the source of truth is `supabase/migrations/*_rls.sql`.
+- **Roles** are a `user_role` enum on `profiles` (`student`, `instructor`, `admin`). New users are
+  always students. A trigger blocks role changes unless the caller is an admin; admins use the
+  `admin_set_role` RPC.
+- **One activity system.** Domain tables fire triggers (`student_progress`, `coding_submissions`,
+  `attendance`, `assignment_submissions`, `roadmap_node_progress`) which call `log_activity()`.
+  `activity_logs` has a unique `(user_id, type, entity_id)` key, so toggling a lesson on/off or
+  re-solving a problem can't farm activity. Streaks, recent activity, achievements and analytics
+  all read from this one log. Clients cannot write to it.
+- **Achievements** are rows in `achievements` with JSON `criteria`
+  (`count` of an activity type, `streak` length, `attendance_rate`). They're evaluated after each
+  activity and unlocked automatically; unlocking creates a notification.
+- **Streaks** count days (in the user's timezone) with at least one meaningful activity — lesson
+  completed, problem solved, class attended, assignment submitted, roadmap topic completed.
+  Achievement unlocks don't count.
+- **Class rosters** = students enrolled in the class's course (`course_enrollments`). Classes with
+  no course are open sessions visible to every student. Following a roadmap enrolls you in its
+  courses.
+- **Assignment statuses**: `not started` = no submission row; `in_progress`/`submitted`/`reviewed`
+  are stored; `late` is derived from `due_at`. A trigger prevents students from grading themselves
+  or editing reviewed work, and limits staff to grading fields.
+- **Daily agenda** = personal agendas (`owner_id`) + cohort agendas created by instructors for a
+  course (`course_id`). Per-student completion lives in `agenda_item_progress`, so one cohort item
+  can be completed individually by each student. Classes and assignment deadlines for the day are
+  merged in at read time — no duplicated rows.
+- **Roadmap progress** follows lesson progress: a topic linked to a lesson is complete when the
+  lesson is; topics without a lesson can be checked off manually.
+- **Notifications** are created by triggers (new announcement, new assignment, class scheduled,
+  assignment reviewed, achievement unlocked, roadmap section finished) and pushed live to the bell
+  via Supabase Realtime.
+
+### Code execution (coding platform)
+
+The MVP deliberately **does not run arbitrary code on the server.** Execution sits behind a
+`CodeRunner` interface (`src/services/execution`):
+
+- `browser-js-runner` — runs JavaScript in an isolated Web Worker in the student's own browser
+  with a hard timeout and network APIs disabled.
+- `remote-runner` — placeholder for a sandbox service (Judge0, Piston, Firecracker…). Configure
+  `NEXT_PUBLIC_CODE_RUNNER_URL` to enable Java/Python. Without it, Java/Python submissions are
+  stored with verdict `pending`.
+
+Students can only read **sample** test cases (RLS). Hidden tests are staff-only and are meant to
+be executed by the future server-side judge. Until then, verdicts reported by the browser runner
+are trusted — fine for a learning MVP, not for competitive grading.
+
+---
+
+## Folder structure
+
+```
+src/
+  app/
+    (marketing)/          /, /about, /pricing
+    (auth)/               /login, /signup, /forgot-password, /reset-password
+    auth/                 OAuth callback + email confirm route handlers
+    onboarding/           3-step onboarding → recommended roadmap
+    (app)/                hybrid layout: app shell if signed in, marketing chrome if not
+      courses/            public catalog, course page, lesson reader
+      roadmaps/           public roadmaps, visual learning path
+      classes/            class schedule
+      (protected)/        signed-in only (and onboarded students)
+        dashboard/ agenda/ attendance/ assignments/ practice/ progress/
+        notes/ achievements/ class/[id]/ profile/ settings/ notifications/
+    instructor/           instructor (and admin) workspace
+    admin/                admin-only dashboard, users, analytics, settings
+  components/
+    ui/                   design-system primitives (shadcn-style)
+    shared/               PageHeader, Section, StatCard, EmptyState, Markdown, badges…
+    layout/               app shell, sidebar, mobile nav, ⌘K search, notification bell
+    marketing/ dashboard/ agenda/ courses/ lesson/ roadmap/ classes/ attendance/
+    assignments/ coding/ progress/ notes/ instructor/ admin/ charts/ onboarding/ profile/
+  lib/
+    supabase/             server/browser clients + session-refreshing proxy helper
+    auth/                 session helpers (requireProfile, requireRole) and sign-out action
+    permissions/          UI-level role helpers
+    utils/                formatting
+  services/               typed data access + server actions per feature, execution layer
+  types/                  domain types mirroring the schema
+  proxy.ts                refreshes Supabase session, redirects anonymous users from protected routes
+supabase/
+  migrations/             0001 schema · 0002 functions & triggers · 0003 RLS
+  seed.sql                realistic demo data (users, courses, lessons, roadmaps, classes…)
+scripts/
+  validate-db.mjs         runs migrations + seed in PGlite (in-process Postgres) as a smoke test
+docs/CONVENTIONS.md       engineering conventions
+```
+
+---
+
+## Supabase setup
+
+1. Create a project at [supabase.com](https://supabase.com) (or use an existing one).
+2. **Apply the migrations** — either:
+   - **SQL editor**: open *SQL Editor* and run, in order,
+     `supabase/migrations/20261002000001_schema.sql`, `…0002_functions.sql`, `…0003_rls.sql`; or
+   - **CLI**:
+     ```bash
+     npx supabase login
+     npx supabase link --project-ref <your-project-ref>
+     npx supabase db push
+     ```
+3. **Seed demo data** (development only): run `supabase/seed.sql` in the SQL editor, or
+   `npx supabase db execute --file supabase/seed.sql` / `psql "$DATABASE_URL" -f supabase/seed.sql`.
+   The seed is re-runnable: it deletes its own demo rows first.
+4. **Auth settings** (*Authentication → URL Configuration*): set Site URL to your app URL and add
+   `http://localhost:3000/**` to redirect URLs.
+5. **Google OAuth (optional)**: *Authentication → Providers → Google*, add client ID/secret, and add
+   `https://<project-ref>.supabase.co/auth/v1/callback` as an authorized redirect URI in Google Cloud.
+6. **Realtime**: the RLS migration adds `notifications` to the `supabase_realtime` publication.
+
+### Demo accounts (from `seed.sql`)
+
+| Role       | Email                  | Password      |
+|------------|------------------------|---------------|
+| Student    | student@rookie.dev     | `Rookie@2026` |
+| Instructor | instructor@rookie.dev  | `Rookie@2026` |
+| Admin      | admin@rookie.dev       | `Rookie@2026` |
+
+> ⚠️ These are development credentials. Delete or change them before going to production.
+
+To make yourself an admin after signing up: run
+`update public.profiles set role = 'admin' where email = 'you@example.com';` in the SQL editor.
+
+---
+
+## Environment variables
+
+Copy `.env.example` to `.env.local`:
+
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key (`sb_publishable_…`). Safe for the browser — RLS protects data. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Legacy anon key; used only if the publishable key is unset |
+| `NEXT_PUBLIC_SITE_URL` | Public URL used in auth email links |
+| `NEXT_PUBLIC_CODE_RUNNER_URL` | Optional sandbox execution service for Java/Python |
+
+No service-role key is needed: the app always acts as the signed-in user. Never commit `.env.local`.
+
+---
+
+## Local development
+
+```bash
+npm install
+cp .env.example .env.local   # fill in your Supabase values
+npm run dev                  # http://localhost:3000
+```
+
+Checks:
+
+```bash
+npm run typecheck
+npm run lint
+npm run build
+node scripts/validate-db.mjs   # migrations + seed smoke test in PGlite (no Docker needed)
+```
+
+## Deployment
+
+Deploy to Vercel (or any Node host):
+
+1. Import the repo, set the environment variables above.
+2. Set `NEXT_PUBLIC_SITE_URL` to the production URL and add it to Supabase Auth redirect URLs.
+3. Apply migrations to the production database (`npx supabase db push`). Do **not** run the seed in
+   production.
+
+---
+
+## Roles
+
+| Capability | Student | Instructor | Admin |
+|---|:-:|:-:|:-:|
+| Dashboard, agenda, roadmaps, courses, lessons, practice, progress, notes, achievements | ✓ | ✓ | ✓ |
+| Read own attendance / submissions / notifications | ✓ | ✓ | ✓ |
+| Modify attendance | ✗ | own classes | all |
+| Create/edit courses, modules, lessons | ✗ | own courses | all |
+| Roadmaps, coding problems | ✗ | own | all |
+| Schedule classes, take attendance | ✗ | own | all |
+| Assignments: create, review, grade | ✗ | own courses | all |
+| Announcements, cohort agendas | ✗ | ✓ | ✓ |
+| Manage users & roles, platform settings, platform analytics | ✗ | ✗ | ✓ |
+
+## Known limitations / next steps
+
+- Java/Python execution needs a sandboxed judge service (see *Code execution*).
+- Deadline/“class starting soon” reminders are shown in-app; time-based push reminders would need
+  `pg_cron` or a scheduled function.
+- `allow_signups` in platform settings is advisory — enforce it in Supabase Auth settings.
