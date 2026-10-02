@@ -14,23 +14,48 @@ interface Recipient {
   full_name: string;
 }
 
+const PAGE = 1000; // PostgREST's default max rows per response
+
+type RecipientRow = { email: string | null; full_name: string };
+
+/** Fetches every page of a ranged query (PostgREST caps each response at 1000 rows). */
+async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>) {
+  const rows: T[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await page(from, from + PAGE - 1);
+    if (error) throw error;
+    rows.push(...(data ?? []));
+    if (!data || data.length < PAGE) return rows;
+  }
+}
+
 /** Students on the class roster: everyone for open classes, else the course's enrolled students. */
 export async function getClassRecipients(supabase: Supabase, courseId: string | null): Promise<Recipient[]> {
-  let query = supabase.from("profiles").select("id, email, full_name").eq("role", "student").not("email", "is", null);
+  let rows: RecipientRow[];
   if (courseId) {
-    const { data: enrolled, error } = await supabase
-      .from("course_enrollments")
-      .select("user_id")
-      .eq("course_id", courseId)
-      .overrideTypes<{ user_id: string }[], { merge: false }>();
-    if (error) throw error;
-    const ids = (enrolled ?? []).map((e) => e.user_id);
-    if (!ids.length) return [];
-    query = query.in("id", ids);
+    const enrolled = await fetchAll((from, to) =>
+      supabase
+        .from("course_enrollments")
+        .select("profile:profiles!inner(email, full_name, role)")
+        .eq("course_id", courseId)
+        .eq("profile.role", "student")
+        .order("user_id")
+        .range(from, to)
+        .overrideTypes<{ profile: RecipientRow }[], { merge: false }>(),
+    );
+    rows = enrolled.map((e) => e.profile);
+  } else {
+    rows = await fetchAll((from, to) =>
+      supabase
+        .from("profiles")
+        .select("email, full_name")
+        .eq("role", "student")
+        .order("id")
+        .range(from, to)
+        .overrideTypes<RecipientRow[], { merge: false }>(),
+    );
   }
-  const { data, error } = await query.overrideTypes<{ id: string; email: string; full_name: string }[], { merge: false }>();
-  if (error) throw error;
-  return (data ?? []).filter((p) => p.email.includes("@"));
+  return rows.filter((p): p is Recipient => !!p.email && p.email.includes("@"));
 }
 
 const HEADLINE: Record<ClassEmailKind, string> = {

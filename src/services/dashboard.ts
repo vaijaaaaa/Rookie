@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from "react";
+import { classEnd, classStart, isClassLive } from "@/components/classes/class-time";
 import { createClient } from "@/lib/supabase/server";
 import type {
   ActivityLog,
@@ -185,7 +186,7 @@ export async function getContinueLearning(userId: string, limit = 3): Promise<Co
       const p = progress.get(l.id);
       if (p?.status === "completed") completed++;
       else if (!next) next = l;
-      if (p && (!lastViewedAt || p.last_viewed_at > lastViewedAt)) lastViewedAt = p.last_viewed_at;
+      if (p && (!lastViewedAt || Date.parse(p.last_viewed_at) > Date.parse(lastViewedAt))) lastViewedAt = p.last_viewed_at;
     }
     if (!next) continue; // course finished
     items.push({
@@ -201,7 +202,7 @@ export async function getContinueLearning(userId: string, limit = 3): Promise<Co
 
   // Most recently touched course first; untouched courses keep catalog order.
   items.sort((a, b) => {
-    if (a.lastViewedAt && b.lastViewedAt) return b.lastViewedAt.localeCompare(a.lastViewedAt);
+    if (a.lastViewedAt && b.lastViewedAt) return Date.parse(b.lastViewedAt) - Date.parse(a.lastViewedAt);
     if (a.lastViewedAt) return -1;
     if (b.lastViewedAt) return 1;
     return 0;
@@ -242,13 +243,12 @@ export async function getUpcomingClass(): Promise<UpcomingClass | null> {
     .order("starts_at")
     .limit(10)
     .overrideTypes<Omit<UpcomingClass, "isLive" | "joinable">[], { merge: false }>();
-  const open = (data ?? []).filter(
-    (c) => new Date(c.starts_at).getTime() + c.duration_minutes * 60_000 > now,
-  );
-  const next = open.find((c) => c.status === "live") ?? open[0];
+  // Same rules as the class pages: a "live" flag only counts until scheduled end + grace.
+  const open = (data ?? []).filter((c) => isClassLive(c, now) || classEnd(c) > now);
+  const next = open.find((c) => isClassLive(c, now)) ?? open[0];
   if (!next) return null;
-  const start = new Date(next.starts_at).getTime();
-  const isLive = next.status === "live" || start <= now;
+  const start = classStart(next);
+  const isLive = isClassLive(next, now);
   return { ...next, isLive, joinable: isLive || start - now <= 15 * 60_000 };
 }
 

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
+import { APP_TIME_ZONE, dateInTz } from "@/components/agenda/tz";
 import { addCohortAgendaItem } from "@/app/admin/agendas/actions";
 import { AGENDA_ITEM_TYPES, PRIORITIES } from "@/services/instructor/utils";
 import type { AgendaItemType, Priority } from "@/types";
@@ -48,7 +49,7 @@ export function AgendaItemForm({ options, defaultDate }: { options: AgendaFormOp
 
   const lessons = useMemo(() => options.lessons.filter((l) => l.course_id === v.course_id), [options.lessons, v.course_id]);
   const classes = useMemo(
-    () => options.classes.filter((c) => c.course_id === v.course_id && c.starts_at.slice(0, 10) === v.date),
+    () => options.classes.filter((c) => c.course_id === v.course_id && dateInTz(c.starts_at, APP_TIME_ZONE) === v.date),
     [options.classes, v.course_id, v.date],
   );
   const assignments = useMemo(() => options.assignments.filter((a) => a.course_id === v.course_id), [options.assignments, v.course_id]);

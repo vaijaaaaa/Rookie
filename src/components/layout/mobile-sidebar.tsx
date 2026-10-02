@@ -8,7 +8,7 @@ import { Logo } from "./logo";
 import { SidebarNav } from "./sidebar-nav";
 import type { UserRole } from "@/types";
 
-export function MobileSidebar({ role }: { role: UserRole }) {
+export function MobileSidebar({ role, home }: { role: UserRole; home: string }) {
   const [open, setOpen] = useState(false);
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -20,7 +20,7 @@ export function MobileSidebar({ role }: { role: UserRole }) {
       <SheetContent side="left">
         <SheetTitle className="sr-only">Navigation</SheetTitle>
         <div className="flex h-14 items-center border-b px-5">
-          <Logo href="/dashboard" />
+          <Logo href={home} onClick={() => setOpen(false)} />
         </div>
         <SidebarNav role={role} onNavigate={() => setOpen(false)} />
       </SheetContent>

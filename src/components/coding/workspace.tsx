@@ -84,12 +84,15 @@ function Kbd({ children }: { children: React.ReactNode }) {
   );
 }
 
+const NO_SAMPLES = "This problem has no runnable sample tests yet";
+
 // ---------------------------------------------------------------------------
 
 export function Workspace({
   problem,
   sampleTests,
   initialSubmissions,
+  initiallySolved,
   description,
   solution,
   notes,
@@ -98,6 +101,8 @@ export function Workspace({
   problem: WorkspaceProblem;
   sampleTests: SampleTest[];
   initialSubmissions: SubmissionSummary[];
+  /** Server-computed: any accepted submission ever (initialSubmissions is capped). */
+  initiallySolved: boolean;
   description: React.ReactNode;
   solution: React.ReactNode | null;
   notes: React.ReactNode;
@@ -199,7 +204,7 @@ export function Workspace({
 
   // --- submissions ---------------------------------------------------------
   const [submissions, setSubmissions] = useState<SubmissionSummary[]>(initialSubmissions);
-  const solved = submissions.some((s) => s.verdict === "accepted");
+  const solved = initiallySolved || submissions.some((s) => s.verdict === "accepted");
 
   const loadSubmission = (s: SubmissionSummary) => {
     setLanguage(s.language);
@@ -262,7 +267,13 @@ export function Workspace({
     setRunning(null);
   };
 
+  const noSamples = samples.length === 0;
+
   const run = useCallback(async () => {
+    if (noSamples) {
+      toast.error(NO_SAMPLES);
+      return;
+    }
     if (!guard("run")) return;
     try {
       const result = await execute(samples);
@@ -270,7 +281,7 @@ export function Workspace({
     } finally {
       finish();
     }
-  }, [guard, execute, samples]);
+  }, [guard, execute, samples, noSamples]);
 
   const runCustom = useCallback(
     async (test: RunTest, compare: boolean) => {
@@ -286,6 +297,11 @@ export function Workspace({
   );
 
   const submit = useCallback(async () => {
+    // The browser judges against sample tests only; with none there is nothing to judge.
+    if (noSamples) {
+      toast.error(NO_SAMPLES);
+      return;
+    }
     if (!guard("submit")) return;
     try {
       // NOTE: Students can only read SAMPLE tests (RLS), so the browser can only
@@ -326,12 +342,21 @@ export function Workspace({
     } finally {
       finish();
     }
-  }, [guard, execute, samples, submitAction, problem.id, language, code]);
+  }, [guard, execute, samples, noSamples, submitAction, problem.id, language, code]);
 
   // Global shortcuts (the editor handles them itself when focused).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.key !== "Enter" || !(e.metaKey || e.ctrlKey)) return;
+      // Don't hijack Mod+Enter typed into other fields (notes, custom test input…); the editor has its own keymap.
+      const el = e.target instanceof HTMLElement ? e.target : null;
+      if (
+        el &&
+        !el.closest(".cm-editor") &&
+        (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName))
+      ) {
+        return;
+      }
       e.preventDefault();
       if (e.shiftKey) void submit();
       else void run();
@@ -361,7 +386,9 @@ export function Workspace({
         </select>
         <Code2 className="pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
       </div>
-      {!executable ? (
+      {noSamples ? (
+        <span className="truncate text-[11px] text-warning">{NO_SAMPLES}</span>
+      ) : !executable ? (
         <span className="hidden truncate text-[11px] text-muted-foreground md:inline" title={SANDBOX_NOT_CONFIGURED}>
           Runs on the judge service · not configured
         </span>

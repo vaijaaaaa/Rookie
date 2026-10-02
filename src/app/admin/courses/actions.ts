@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { dbError, invalid, nn, NOT_PERMITTED, withStaff, type StaffContext } from "@/services/instructor/context";
+import { checkInstructor, dbError, invalid, nn, NOT_PERMITTED, withStaff, type StaffContext } from "@/services/instructor/context";
 import { moveRow, nextPosition } from "@/services/instructor/reorder";
 import {
   courseSchema, lessonSchema, moduleSchema, newLessonSchema, resourceSchema,
@@ -36,8 +36,13 @@ export async function saveCourse(id: string | null, input: CourseInput): Promise
     if (!parsed.success) return invalid(parsed.error);
     const { instructor_id, ...v } = parsed.data;
     const row: Record<string, unknown> = { ...v, icon: nn(v.icon) };
+    const instructorId = nn(instructor_id);
+    if (instructorId && instructorId !== ctx.profile.id) {
+      const problem = await checkInstructor(ctx, instructorId);
+      if (problem) return { ok: false, error: problem };
+    }
     if (ctx.isAdmin) {
-      if (nn(instructor_id)) row.instructor_id = instructor_id;
+      if (instructorId) row.instructor_id = instructorId;
       else if (!id) row.instructor_id = ctx.profile.id;
     } else if (!id) {
       row.instructor_id = ctx.profile.id;
@@ -58,6 +63,18 @@ export async function saveCourse(id: string | null, input: CourseInput): Promise
 
 export async function deleteCourse(id: string): Promise<ActionResult> {
   return withStaff(async (ctx) => {
+    // Classes would otherwise lose their course (on delete set null) and become open to every student.
+    const { count, error: countError } = await ctx.supabase
+      .from("classes")
+      .select("id", { count: "exact", head: true })
+      .eq("course_id", id);
+    if (countError) return dbError(countError);
+    if (count) {
+      return {
+        ok: false,
+        error: `Delete or move this course's ${count} class${count === 1 ? "" : "es"} first.`,
+      };
+    }
     const { data, error } = await ctx.supabase.from("courses").delete().eq("id", id).select("id");
     if (error) return dbError(error);
     if (!data?.length) return NOT_PERMITTED;

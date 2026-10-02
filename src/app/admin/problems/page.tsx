@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ConfirmAction } from "@/components/instructor/confirm-action";
 import { SearchForm } from "@/components/instructor/search-form";
+import { sanitizeSearch } from "@/services/admin";
 import { requireStaff } from "@/services/instructor/context";
 import type { CodingProblem } from "@/types";
 import { deleteProblem } from "./actions";
@@ -29,9 +30,9 @@ export default async function ProblemsPage({ searchParams }: { searchParams: Pro
     .order("title")
     .limit(200);
   if (!ctx.isAdmin) query = query.eq("created_by", ctx.profile.id);
-  const term = q?.trim().replace(/[%,()]/g, "");
+  const term = sanitizeSearch(q ?? "");
   if (term) query = query.or(`title.ilike.%${term}%,topic.ilike.%${term}%`);
-  const { data } = await query.overrideTypes<Row[], { merge: false }>();
+  const { data, error } = await query.overrideTypes<Row[], { merge: false }>();
   const problems = data ?? [];
 
   const newButton = (
@@ -48,6 +49,7 @@ export default async function ProblemsPage({ searchParams }: { searchParams: Pro
       <div className="mb-4">
         <SearchForm placeholder="Search by title or topic…" defaultValue={q ?? ""} />
       </div>
+      {error ? <p className="mb-4 text-sm text-destructive">Couldn&apos;t load problems: {error.message}</p> : null}
       {problems.length === 0 ? (
         <EmptyState
           icon={Code2}

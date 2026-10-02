@@ -43,7 +43,13 @@ export async function signInWithPassword(values: LoginValues): Promise<ActionRes
     .eq("id", data.user.id)
     .maybeSingle<RedirectProfile>();
 
-  redirect(postAuthRedirect(profile ?? null, parsed.data.next));
+  if (!profile) {
+    // No profile row: every protected page would bounce back to /login.
+    await supabase.auth.signOut();
+    return { ok: false, error: "Your account isn't set up yet — contact your admin." };
+  }
+
+  redirect(postAuthRedirect(profile, parsed.data.next));
 }
 
 /** Sends a password reset email. Always reports success to avoid account enumeration. */

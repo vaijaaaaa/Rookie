@@ -53,7 +53,7 @@ export default async function CourseEditorPage({ params }: { params: Promise<{ i
             <ConfirmAction
               action={deleteCourse.bind(null, course.id)}
               title="Delete this course?"
-              description="All modules, lessons, assignments, enrollments and progress for this course are permanently deleted."
+              description="All modules, lessons, assignments, enrollments and progress for this course are permanently deleted. Courses that still have classes can't be deleted — delete or move those classes first."
               successMessage="Course deleted"
               redirectTo="/admin/courses"
               trigger={

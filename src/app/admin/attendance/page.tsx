@@ -14,22 +14,28 @@ import { APP_TIME_ZONE } from "@/components/agenda/tz";
 
 export const metadata = { title: "Attendance" };
 
-function pickDefault(classes: ClassListRow[], today: { start: string; end: string }, now: string) {
-  const todays = classes
-    .filter((c) => c.starts_at >= today.start && c.starts_at < today.end)
-    .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+// Timestamps come back as "+05:30" strings, so compare instants, never strings.
+const ms = (iso: string) => Date.parse(iso);
+
+function isToday(startsAt: string, today: { start: string; end: string }) {
+  const t = ms(startsAt);
+  return t >= ms(today.start) && t < ms(today.end);
+}
+
+function pickDefault(classes: ClassListRow[], today: { start: string; end: string }, now: number) {
+  const todays = classes.filter((c) => isToday(c.starts_at, today)).sort((a, b) => ms(a.starts_at) - ms(b.starts_at));
   if (todays.length) {
     // the latest of today's classes that has started, else the first one today
-    return [...todays].reverse().find((c) => c.starts_at <= now) ?? todays[0];
+    return [...todays].reverse().find((c) => ms(c.starts_at) <= now) ?? todays[0];
   }
-  return classes.find((c) => c.starts_at <= now) ?? null; // list is sorted desc
+  return classes.find((c) => ms(c.starts_at) <= now) ?? null; // list is sorted desc
 }
 
 export default async function AttendancePage() {
   const ctx = await requireStaff();
   const courseIds = await getManagedCourseIds(ctx);
   const scope = classScopeFilter(ctx, courseIds);
-  const now = nowIso();
+  const now = Date.parse(nowIso());
   const today = dayBoundsInTz(APP_TIME_ZONE, new Date(now));
 
   let q = ctx.supabase
@@ -66,7 +72,7 @@ export default async function AttendancePage() {
             >
               <div className="min-w-0">
                 <p className="font-mono text-[11px] uppercase tracking-wider text-brand">
-                  {suggested.starts_at >= today.start && suggested.starts_at < today.end ? "Today" : "Most recent"}
+                  {isToday(suggested.starts_at, today) ? "Today" : "Most recent"}
                 </p>
                 <p className="truncate font-medium">{suggested.title}</p>
                 <p className="text-xs text-muted-foreground">

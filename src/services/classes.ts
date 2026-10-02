@@ -3,6 +3,7 @@ import { cache } from "react";
 import { TZDate } from "@date-fns/tz";
 import { addDays } from "date-fns";
 import { APP_TIME_ZONE } from "@/components/agenda/tz";
+import { getUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { isClassLive, isClassPast } from "@/components/classes/class-time";
 import type { AttendanceStatus, ClassSession } from "@/types";
@@ -58,18 +59,48 @@ export function parseClassTab(v: string | string[] | undefined): ClassTab {
   return CLASS_TABS.includes(s as ClassTab) ? (s as ClassTab) : "upcoming";
 }
 
+const LIST_RELATIONS =
+  "instructor:profiles!classes_instructor_id_fkey(id,full_name,avatar_url,username)," +
+  "course:courses!classes_course_id_fkey(id,slug,title)," +
+  "module:course_modules!classes_module_id_fkey(id,title)";
+
 const LIST_SELECT =
   "id,title,starts_at,duration_minutes,status,meeting_url,recording_url,course_id,module_id,instructor_id," +
-  "instructor:profiles!classes_instructor_id_fkey(id,full_name,avatar_url,username)," +
+  LIST_RELATIONS;
+
+/** Anonymous visitors have no column grant on meeting_url / recording_url. */
+const ANON_LIST_SELECT =
+  "id,title,starts_at,duration_minutes,status,course_id,module_id,instructor_id," + LIST_RELATIONS;
+
+const DETAIL_RELATIONS =
+  "instructor:profiles!classes_instructor_id_fkey(id,full_name,avatar_url,username,bio)," +
   "course:courses!classes_course_id_fkey(id,slug,title)," +
   "module:course_modules!classes_module_id_fkey(id,title)";
 
 const DETAIL_SELECT =
   "id,title,description,agenda,resources,created_at,starts_at,duration_minutes,status,meeting_url,recording_url," +
   "course_id,module_id,instructor_id," +
-  "instructor:profiles!classes_instructor_id_fkey(id,full_name,avatar_url,username,bio)," +
-  "course:courses!classes_course_id_fkey(id,slug,title)," +
-  "module:course_modules!classes_module_id_fkey(id,title)";
+  DETAIL_RELATIONS;
+
+const ANON_DETAIL_SELECT =
+  "id,title,description,agenda,resources,created_at,starts_at,duration_minutes,status," +
+  "course_id,module_id,instructor_id," +
+  DETAIL_RELATIONS;
+
+/** Select strings for the current viewer: links are only readable when signed in. */
+async function selectsForViewer() {
+  const signedIn = Boolean(await getUser());
+  return {
+    signedIn,
+    list: signedIn ? LIST_SELECT : ANON_LIST_SELECT,
+    detail: signedIn ? DETAIL_SELECT : ANON_DETAIL_SELECT,
+  };
+}
+
+function withLinks<T extends object>(row: T): T & { meeting_url: string | null; recording_url: string | null } {
+  const r = row as T & { meeting_url?: string | null; recording_url?: string | null };
+  return { ...r, meeting_url: r.meeting_url ?? null, recording_url: r.recording_url ?? null };
+}
 
 /** Longest class we look back over when hunting for "live now" sessions. */
 const LIVE_LOOKBACK_HOURS = 12;
@@ -97,18 +128,18 @@ function normalizeResources<T extends { resources?: unknown }>(row: T): T {
 
 /** Classes visible to the current user that started at most a few hours ago, soonest first. */
 export async function getUpcomingClasses(limit = 5): Promise<ClassListItem[]> {
-  const supabase = await createClient();
+  const [supabase, sel] = await Promise.all([createClient(), selectsForViewer()]);
   const now = Date.now();
   const { data } = await supabase
     .from("classes")
-    .select(LIST_SELECT)
+    .select(sel.list)
     .gte("starts_at", hoursAgoISO(now, UPCOMING_GRACE_HOURS))
     .neq("status", "cancelled")
     .neq("status", "completed")
     .order("starts_at", { ascending: true })
     .limit(limit)
     .overrideTypes<ClassListItem[], { merge: false }>();
-  return (data ?? []).filter((c) => !isClassPast(c, now));
+  return (data ?? []).map(withLinks).filter((c) => !isClassPast(c, now));
 }
 
 /** All classes visible to the current user that start on the given IST date (yyyy-MM-dd). */
@@ -121,23 +152,23 @@ export async function getClassesOn(dateISO: string): Promise<ClassListItem[]> {
 
 /** Classes visible to the current user with starts_at in [from, to). */
 export async function getClassesBetween(from: Date, to: Date): Promise<ClassListItem[]> {
-  const supabase = await createClient();
+  const [supabase, sel] = await Promise.all([createClient(), selectsForViewer()]);
   const { data } = await supabase
     .from("classes")
-    .select(LIST_SELECT)
+    .select(sel.list)
     .gte("starts_at", from.toISOString())
     .lt("starts_at", to.toISOString())
     .order("starts_at", { ascending: true })
     .overrideTypes<ClassListItem[], { merge: false }>();
-  return data ?? [];
+  return (data ?? []).map(withLinks);
 }
 
 /** Classes for one tab of /classes. */
 export async function listClasses(tab: ClassTab): Promise<{ classes: ClassListItem[]; now: number }> {
-  const supabase = await createClient();
+  const [supabase, sel] = await Promise.all([createClient(), selectsForViewer()]);
   const now = Date.now();
   const nowISO = new Date(now).toISOString();
-  const base = () => supabase.from("classes").select(LIST_SELECT);
+  const base = () => supabase.from("classes").select(sel.list);
 
   if (tab === "upcoming") {
     const { data } = await base()
@@ -146,7 +177,7 @@ export async function listClasses(tab: ClassTab): Promise<{ classes: ClassListIt
       .order("starts_at", { ascending: true })
       .limit(LIST_LIMIT)
       .overrideTypes<ClassListItem[], { merge: false }>();
-    return { classes: (data ?? []).filter((c) => !isClassLive(c, now)), now };
+    return { classes: (data ?? []).map(withLinks).filter((c) => !isClassLive(c, now)), now };
   }
 
   if (tab === "live") {
@@ -155,10 +186,12 @@ export async function listClasses(tab: ClassTab): Promise<{ classes: ClassListIt
       .order("starts_at", { ascending: true })
       .limit(LIST_LIMIT)
       .overrideTypes<ClassListItem[], { merge: false }>();
-    return { classes: (data ?? []).filter((c) => isClassLive(c, now)), now };
+    return { classes: (data ?? []).map(withLinks).filter((c) => isClassLive(c, now)), now };
   }
 
   if (tab === "recorded") {
+    // Recordings are for signed-in students only.
+    if (!sel.signedIn) return { classes: [], now };
     const { data } = await base()
       .not("recording_url", "is", null)
       .order("starts_at", { ascending: false })
@@ -172,15 +205,15 @@ export async function listClasses(tab: ClassTab): Promise<{ classes: ClassListIt
     .order("starts_at", { ascending: false })
     .limit(LIST_LIMIT)
     .overrideTypes<ClassListItem[], { merge: false }>();
-  return { classes: (data ?? []).filter((c) => !isClassLive(c, now)), now };
+  return { classes: (data ?? []).map(withLinks).filter((c) => !isClassLive(c, now)), now };
 }
 
 /** One class, or null when it doesn't exist / RLS hides it. Memoized per request. */
 export const getClass = cache(async (id: string): Promise<ClassDetail | null> => {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
-  const supabase = await createClient();
-  const { data } = await supabase.from("classes").select(DETAIL_SELECT).eq("id", id).maybeSingle<ClassDetail>();
-  return data ? normalizeResources(data) : null;
+  const [supabase, sel] = await Promise.all([createClient(), selectsForViewer()]);
+  const { data } = await supabase.from("classes").select(sel.detail).eq("id", id).maybeSingle<ClassDetail>();
+  return data ? normalizeResources(withLinks(data)) : null;
 });
 
 /** The current user's attendance status keyed by class id (read only). */

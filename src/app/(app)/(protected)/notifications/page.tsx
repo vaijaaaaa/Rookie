@@ -12,6 +12,7 @@ import { requireProfile } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { formatDate, timeAgo } from "@/lib/utils/format";
+import { safeLink } from "@/lib/utils/links";
 import type { Notification, NotificationType } from "@/types";
 import { markAllNotificationsRead, markNotificationRead } from "./actions";
 
@@ -29,11 +30,6 @@ const ICONS: Record<NotificationType, LucideIcon> = {
   roadmap_milestone: Milestone,
   system: Bell,
 };
-
-/** Only follow in-app relative links stored on notifications. */
-function safeLink(link: string | null) {
-  return link && link.startsWith("/") && !link.startsWith("//") ? link : null;
-}
 
 function href(filter: "all" | "unread", page: number) {
   const params = new URLSearchParams();

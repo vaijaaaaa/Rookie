@@ -13,6 +13,9 @@ export async function saveAttendance(input: AttendanceInput): Promise<ActionResu
     const { class_id, rows } = parsed.data;
     const cls = await getManagedClass(ctx, class_id);
     if (!cls) return NOT_PERMITTED;
+    if (Date.parse(cls.starts_at) > Date.now()) {
+      return { ok: false, error: "You can mark attendance once the class has started." };
+    }
     if (!rows.length) return { ok: false, error: "Mark at least one student first." };
     const { error } = await ctx.supabase.from("attendance").upsert(
       rows.map((r) => ({

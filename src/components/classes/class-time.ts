@@ -3,6 +3,9 @@ import type { ClassSession } from "@/types";
 /** Minutes before start when the "Join" button unlocks. */
 export const JOIN_WINDOW_MINUTES = 15;
 
+/** A class marked "live" stays live this long past its scheduled end (overruns), then counts as ended. */
+export const LIVE_GRACE_MINUTES = 60;
+
 type Timed = Pick<ClassSession, "starts_at" | "duration_minutes" | "status">;
 
 export function classStart(c: Pick<ClassSession, "starts_at">): number {
@@ -13,10 +16,15 @@ export function classEnd(c: Pick<ClassSession, "starts_at" | "duration_minutes">
   return classStart(c) + c.duration_minutes * 60_000;
 }
 
-/** Live = explicitly marked live, or now is within [starts_at, starts_at + duration]. */
+/** Whether a class marked "live" is still within its scheduled end + grace (a forgotten "live" flag expires). */
+function liveFlagActive(c: Timed, now: number): boolean {
+  return c.status === "live" && now <= classEnd(c) + LIVE_GRACE_MINUTES * 60_000;
+}
+
+/** Live = marked live (until end + grace), or now is within [starts_at, starts_at + duration]. */
 export function isClassLive(c: Timed, now: number): boolean {
   if (c.status === "cancelled" || c.status === "completed") return false;
-  if (c.status === "live") return true;
+  if (liveFlagActive(c, now)) return true;
   return now >= classStart(c) && now <= classEnd(c);
 }
 
@@ -33,12 +41,12 @@ export type JoinState =
   | { kind: "cancelled" }
   | { kind: "no_link" };
 
-/** Join is allowed from JOIN_WINDOW_MINUTES before start until the scheduled end (or while marked live). */
+/** Join is allowed from JOIN_WINDOW_MINUTES before start until the scheduled end (or while marked live, within grace). */
 export function joinState(c: Timed & Pick<ClassSession, "meeting_url">, now: number): JoinState {
   if (c.status === "cancelled") return { kind: "cancelled" };
   if (!c.meeting_url) return { kind: "no_link" };
   const opensAt = classStart(c) - JOIN_WINDOW_MINUTES * 60_000;
-  if (c.status === "live") return { kind: "open" };
+  if (liveFlagActive(c, now)) return { kind: "open" };
   if (c.status === "completed" || now > classEnd(c)) return { kind: "ended" };
   if (now < opensAt) return { kind: "early", opensAt };
   return { kind: "open" };

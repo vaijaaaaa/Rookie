@@ -20,7 +20,7 @@ export default async function AchievementsPage() {
   const sorted = achievements
     .map((a, i) => ({ a, i }))
     .sort((x, y) => {
-      if (x.a.unlockedAt && y.a.unlockedAt) return y.a.unlockedAt.localeCompare(x.a.unlockedAt);
+      if (x.a.unlockedAt && y.a.unlockedAt) return Date.parse(y.a.unlockedAt) - Date.parse(x.a.unlockedAt);
       if (x.a.unlockedAt) return -1;
       if (y.a.unlockedAt) return 1;
       return x.i - y.i;

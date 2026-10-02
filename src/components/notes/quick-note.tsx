@@ -189,7 +189,7 @@ function QuickNoteEditor({
   const empty = !title.trim() && !content.trim();
 
   function submit() {
-    if (empty) return;
+    if (pending || empty) return;
     startTransition(async () => {
       await onSave({ title: title.trim(), content });
     });

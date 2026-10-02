@@ -375,7 +375,10 @@ export type PaymentMethod = "cash" | "upi" | "bank_transfer" | "card" | "other";
 
 export interface StudentPayment {
   id: string;
-  user_id: string;
+  /** null once the student's account has been deleted (see student_name). */
+  user_id: string | null;
+  /** Snapshot of the student's name, kept after their account is deleted. */
+  student_name: string | null;
   /** yyyy-MM-01 */
   period: string;
   amount: number;

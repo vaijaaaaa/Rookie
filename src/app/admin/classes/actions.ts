@@ -5,7 +5,7 @@ import { after } from "next/server";
 import { isEmailConfigured, sendEmails } from "@/lib/email";
 import { errorMessage } from "@/lib/utils";
 import { buildClassEmails, getClassRecipients, type ClassEmailKind } from "@/services/class-emails";
-import { dbError, invalid, nn, NOT_PERMITTED, withStaff, type StaffContext } from "@/services/instructor/context";
+import { checkInstructor, dbError, invalid, nn, NOT_PERMITTED, withStaff, type StaffContext } from "@/services/instructor/context";
 import { classSchema, idSchema, type ClassInput } from "@/services/instructor/schemas";
 import type { ActionResult, ClassSession } from "@/types";
 
@@ -17,7 +17,7 @@ function revalidate(id?: string) {
   if (id) revalidatePath(`/admin/classes/${id}`);
 }
 
-type PrevClass = Pick<ClassSession, "starts_at" | "status">;
+type PrevClass = Pick<ClassSession, "starts_at" | "status" | "course_id">;
 
 /** Which email (if any) students should get for this save. */
 function emailKind(prev: PrevClass | null, next: PrevClass): ClassEmailKind | null {
@@ -26,6 +26,8 @@ function emailKind(prev: PrevClass | null, next: PrevClass): ClassEmailKind | nu
   if (next.status === "cancelled") return prev.status === "cancelled" ? null : "cancelled";
   if (next.status === "completed") return null;
   if (prev.status === "cancelled") return "scheduled";
+  // Moved to another cohort: the new roster hasn't heard about it yet.
+  if ((prev.course_id ?? null) !== (next.course_id ?? null)) return "scheduled";
   return new Date(prev.starts_at).getTime() !== new Date(next.starts_at).getTime() ? "rescheduled" : null;
 }
 
@@ -88,14 +90,19 @@ export async function saveClass(id: string | null, input: ClassInput): Promise<A
       status: v.status,
     };
     // Ownership: instructors always own what they create; admins may assign.
+    const instructorId = nn(v.instructor_id);
+    if (instructorId && instructorId !== ctx.profile.id) {
+      const problem = await checkInstructor(ctx, instructorId);
+      if (problem) return { ok: false, error: problem };
+    }
     if (ctx.isAdmin) {
-      if (nn(v.instructor_id)) row.instructor_id = v.instructor_id;
+      if (instructorId) row.instructor_id = instructorId;
       else if (!id) row.instructor_id = ctx.profile.id;
     } else if (!id) {
       row.instructor_id = ctx.profile.id;
     }
 
-    const next = { starts_at: row.starts_at as string, status: v.status };
+    const next: PrevClass = { starts_at: row.starts_at as string, status: v.status, course_id: courseId };
     const emailFields = {
       title: v.title,
       description: v.description,
@@ -115,7 +122,7 @@ export async function saveClass(id: string | null, input: ClassInput): Promise<A
     if (!idSchema.safeParse(id).success) return NOT_PERMITTED;
     const { data: prev } = await ctx.supabase
       .from("classes")
-      .select("starts_at, status")
+      .select("starts_at, status, course_id")
       .eq("id", id)
       .maybeSingle<PrevClass>();
     const { data, error } = await ctx.supabase.from("classes").update(row).eq("id", id).select("id");

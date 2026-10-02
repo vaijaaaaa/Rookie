@@ -43,6 +43,6 @@ export async function getCurriculum(ctx: StaffContext, courseId: string): Promis
     .overrideTypes<(CurriculumModule & { lessons: (CurriculumModule["lessons"][number] & { created_at: string })[] })[], { merge: false }>();
   return (data ?? []).map((m) => ({
     ...m,
-    lessons: [...m.lessons].sort((a, b) => a.position - b.position || a.created_at.localeCompare(b.created_at)),
+    lessons: [...m.lessons].sort((a, b) => a.position - b.position || Date.parse(a.created_at) - Date.parse(b.created_at)),
   }));
 }

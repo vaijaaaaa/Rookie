@@ -13,6 +13,7 @@ import { Section } from "@/components/shared/section";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { UserAvatar } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
+import { isClassLive } from "@/components/classes/class-time";
 import { getProfile } from "@/lib/auth/session";
 import { formatTime, relativeDay } from "@/lib/utils/format";
 import {
@@ -167,7 +168,7 @@ export default async function CoursePage({ params }: Params) {
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-          {profile && enrolled ? <UpcomingClasses classes={upcoming} /> : null}
+          {profile && enrolled ? <UpcomingClasses classes={upcoming} now={currentTime()} /> : null}
           <Section title="Course at a glance">
             <dl className="grid grid-cols-2 gap-3 text-sm">
               <Glance label="Level">
@@ -202,7 +203,11 @@ function Glance({ label, children }: { label: string; children: React.ReactNode 
   );
 }
 
-function UpcomingClasses({ classes }: { classes: UpcomingClass[] }) {
+function currentTime() {
+  return Date.now();
+}
+
+function UpcomingClasses({ classes, now }: { classes: UpcomingClass[]; now: number }) {
   return (
     <Section title="Upcoming classes" href="/classes" hrefLabel="All" contentClassName="p-0">
       {classes.length === 0 ? (
@@ -213,7 +218,7 @@ function UpcomingClasses({ classes }: { classes: UpcomingClass[] }) {
             <li key={c.id}>
               <Link href={`/class/${c.id}`} className="flex items-start gap-3 px-4 py-3 hover:bg-accent/40">
                 <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md border bg-muted/40">
-                  {c.status === "live" ? (
+                  {isClassLive(c, now) ? (
                     <Video className="size-4 text-destructive" />
                   ) : (
                     <CalendarClock className="size-4 text-muted-foreground" />
@@ -225,7 +230,7 @@ function UpcomingClasses({ classes }: { classes: UpcomingClass[] }) {
                     {relativeDay(c.starts_at)} · {formatTime(c.starts_at)} · {c.duration_minutes}m
                   </p>
                 </div>
-                {c.status === "live" ? <StatusBadge status="live" /> : null}
+                {isClassLive(c, now) ? <StatusBadge status="live" /> : null}
               </Link>
             </li>
           ))}

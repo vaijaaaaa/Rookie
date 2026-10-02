@@ -72,3 +72,18 @@ export function invalid(error: { issues: { message: string; path: PropertyKey[] 
   const field = issue.path.filter((p) => typeof p === "string").join(".");
   return { ok: false, error: field ? `${field}: ${issue.message}` : issue.message };
 }
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Checks that an instructor id is an existing admin. Returns an error message, or null when valid. */
+export async function checkInstructor(ctx: StaffContext, instructorId: string): Promise<string | null> {
+  if (!UUID_RE.test(instructorId)) return "Pick a valid instructor.";
+  const { data, error } = await ctx.supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", instructorId)
+    .maybeSingle<{ role: string }>();
+  if (error) return error.message;
+  if (data?.role !== "admin") return "The instructor must be an existing admin.";
+  return null;
+}

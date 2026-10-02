@@ -104,7 +104,7 @@ export default async function CoursesPage() {
                       <ConfirmAction
                         action={deleteCourse.bind(null, c.id)}
                         title={`Delete "${c.title}"?`}
-                        description="All modules, lessons, assignments, enrollments and progress for this course are permanently deleted."
+                        description="All modules, lessons, assignments, enrollments and progress for this course are permanently deleted. Courses that still have classes can't be deleted — delete or move those classes first."
                         successMessage="Course deleted"
                       />
                     </div>

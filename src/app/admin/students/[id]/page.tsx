@@ -221,7 +221,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           ) : (
             <ul className="grid gap-2 text-sm">
               {submissions.map((s) => {
-                const late = !!(s.submitted_at && s.assignments && s.submitted_at > s.assignments.due_at);
+                const late = !!(s.submitted_at && s.assignments && Date.parse(s.submitted_at) > Date.parse(s.assignments.due_at));
                 return (
                   <li key={s.id} className="flex items-center justify-between gap-3">
                     <Link

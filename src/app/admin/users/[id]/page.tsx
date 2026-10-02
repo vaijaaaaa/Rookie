@@ -49,8 +49,8 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
   const counted = attended + attendance.absent;
   const attendanceRate = percent(attended, counted);
   const isSelf = profile.id === me.id;
-  const payments = profile.role === "student" ? await getStudentPayments(profile.id) : [];
-  const paidTotal = payments.reduce((sum, p) => sum + p.amount, 0);
+  const { payments, total: paidTotal } =
+    profile.role === "student" ? await getStudentPayments(profile.id) : { payments: [], total: 0 };
   const thisMonth = monthToPeriod(undefined).slice(0, 7);
 
   return (

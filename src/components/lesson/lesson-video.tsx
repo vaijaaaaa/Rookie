@@ -1,5 +1,14 @@
 import { ExternalLink, PlayCircle } from "lucide-react";
 
+/** Parses YouTube start times: plain seconds ("90", "90s") or h/m/s ("1h2m3s", "1m30s"). */
+function parseStart(raw: string | null): number | null {
+  if (!raw) return null;
+  if (/^\d+$/.test(raw)) return Number(raw);
+  const m = raw.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/);
+  if (!m || (!m[1] && !m[2] && !m[3])) return null;
+  return Number(m[1] ?? 0) * 3600 + Number(m[2] ?? 0) * 60 + Number(m[3] ?? 0);
+}
+
 /** Returns a privacy-friendly YouTube embed URL for watch/short/embed links, else null. */
 export function youtubeEmbedUrl(url: string): string | null {
   try {
@@ -15,9 +24,8 @@ export function youtubeEmbedUrl(url: string): string | null {
       }
     }
     if (!id || !/^[\w-]{6,}$/.test(id)) return null;
-    const start = u.searchParams.get("t") ?? u.searchParams.get("start");
-    const seconds = start ? Number.parseInt(start, 10) : NaN;
-    return `https://www.youtube-nocookie.com/embed/${id}${Number.isFinite(seconds) ? `?start=${seconds}` : ""}`;
+    const seconds = parseStart(u.searchParams.get("t") ?? u.searchParams.get("start"));
+    return `https://www.youtube-nocookie.com/embed/${id}${seconds != null ? `?start=${seconds}` : ""}`;
   } catch {
     return null;
   }

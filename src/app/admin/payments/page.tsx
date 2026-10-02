@@ -43,7 +43,9 @@ export default async function PaymentsPage({ searchParams }: { searchParams: SP 
   const q = (sp.q ?? "").trim().toLowerCase();
 
   const [ledger, trend] = await Promise.all([getMonthLedger(period), getCollectionTrend(period)]);
-  const students = ledger.rows.map((r) => ({ id: r.student.id, name: r.student.full_name || r.student.email || "Student" }));
+  const students = ledger.rows
+    .filter((r) => r.isStudent)
+    .map((r) => ({ id: r.student.id, name: r.student.full_name || r.student.email || "Student" }));
   const defaultAmount = typicalAmount(ledger.rows.flatMap((r) => r.payments.map((p) => p.amount)));
 
   const rows = ledger.rows.filter((r) => {
@@ -147,49 +149,73 @@ export default async function PaymentsPage({ searchParams }: { searchParams: SP 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map(({ student, payments, total }) => {
+              {rows.flatMap(({ student, isStudent, payments, total }) => {
                 const name = student.full_name || student.email || "Student";
-                const latest = payments[0];
-                return (
-                  <TableRow key={student.id}>
-                    <TableCell>
-                      <Link href={`/admin/users/${student.id}`} className="flex items-center gap-2.5 hover:underline">
-                        <UserAvatar name={name} src={student.avatar_url} className="size-7" />
-                        <span className="min-w-0">
-                          <span className="block truncate font-medium">{name}</span>
-                          <span className="block truncate text-xs text-muted-foreground">{student.email}</span>
-                        </span>
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      {payments.length ? <Badge variant="success">Paid</Badge> : <Badge variant="warning">Unpaid</Badge>}
-                    </TableCell>
+                const studentCell = isStudent ? (
+                  <Link href={`/admin/users/${student.id}`} className="flex items-center gap-2.5 hover:underline">
+                    <UserAvatar name={name} src={student.avatar_url} className="size-7" />
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium">{name}</span>
+                      <span className="block truncate text-xs text-muted-foreground">{student.email}</span>
+                    </span>
+                  </Link>
+                ) : (
+                  <span className="flex items-center gap-2.5">
+                    <UserAvatar name={name} src={null} className="size-7" />
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium">{name}</span>
+                      <span className="block truncate text-xs text-muted-foreground">No longer a student</span>
+                    </span>
+                  </span>
+                );
+                const recordButton = isStudent ? (
+                  <PaymentDialog students={students} defaultStudentId={student.id} defaultMonth={month} defaultAmount={defaultAmount} trigger="row" />
+                ) : null;
+
+                if (payments.length === 0) {
+                  return [
+                    <TableRow key={student.id}>
+                      <TableCell>{studentCell}</TableCell>
+                      <TableCell><Badge variant="warning">Unpaid</Badge></TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">—</TableCell>
+                      <TableCell className="hidden md:table-cell">—</TableCell>
+                      <TableCell className="hidden font-mono text-xs md:table-cell">—</TableCell>
+                      <TableCell className="hidden lg:table-cell">—</TableCell>
+                      <TableCell><div className="flex justify-end gap-1">{recordButton}</div></TableCell>
+                    </TableRow>,
+                  ];
+                }
+
+                // One row per payment so each can be edited or deleted on its own.
+                return payments.map((p, i) => (
+                  <TableRow key={p.id} className={i > 0 ? "border-t-0" : undefined}>
+                    <TableCell>{i === 0 ? studentCell : <span className="sr-only">{name}</span>}</TableCell>
+                    <TableCell>{i === 0 ? <Badge variant="success">Paid</Badge> : null}</TableCell>
                     <TableCell className="text-right font-mono tabular-nums">
-                      {payments.length ? formatMoney(total) : "—"}
-                      {payments.length > 1 ? <span className="block text-[11px] text-muted-foreground">{payments.length} payments</span> : null}
+                      {formatMoney(p.amount)}
+                      {i === 0 && payments.length > 1 ? (
+                        <span className="block text-[11px] text-muted-foreground">
+                          {formatMoney(total)} · {payments.length} payments
+                        </span>
+                      ) : null}
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">{latest ? METHOD_LABEL[latest.method] : "—"}</TableCell>
-                    <TableCell className="hidden font-mono text-xs md:table-cell">{latest ? formatDate(`${latest.paid_on}T12:00:00`, "MMM d, yyyy") : "—"}</TableCell>
-                    <TableCell className="hidden max-w-40 truncate font-mono text-xs text-muted-foreground lg:table-cell">{latest?.reference ?? "—"}</TableCell>
+                    <TableCell className="hidden md:table-cell">{METHOD_LABEL[p.method]}</TableCell>
+                    <TableCell className="hidden font-mono text-xs md:table-cell">{formatDate(`${p.paid_on}T12:00:00`, "MMM d, yyyy")}</TableCell>
+                    <TableCell className="hidden max-w-40 truncate font-mono text-xs text-muted-foreground lg:table-cell">{p.reference ?? "—"}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
-                        {latest ? (
-                          <>
-                            <PaymentDialog students={students} defaultMonth={month} payment={latest} trigger="icon" />
-                            <ConfirmAction
-                              action={deletePayment.bind(null, latest.id)}
-                              title={`Delete ${formatMoney(latest.amount)} payment from ${name}?`}
-                              description="Removes this payment record. It can't be undone."
-                              successMessage="Payment deleted"
-                            />
-                          </>
-                        ) : (
-                          <PaymentDialog students={students} defaultStudentId={student.id} defaultMonth={month} defaultAmount={defaultAmount} trigger="row" />
-                        )}
+                        {isStudent ? <PaymentDialog students={students} defaultMonth={month} payment={p} trigger="icon" /> : null}
+                        <ConfirmAction
+                          action={deletePayment.bind(null, p.id)}
+                          title={`Delete ${formatMoney(p.amount)} payment from ${name}?`}
+                          description="Removes this payment record. It can't be undone."
+                          successMessage="Payment deleted"
+                        />
+                        {i === 0 ? recordButton : null}
                       </div>
                     </TableCell>
                   </TableRow>
-                );
+                ));
               })}
             </TableBody>
           </Table>

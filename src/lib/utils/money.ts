@@ -1,3 +1,4 @@
+import { toISODate } from "@/lib/utils/format";
 import type { PaymentMethod } from "@/types";
 
 export const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
@@ -24,10 +25,10 @@ export function formatMoney(amount: number | string, currency = "INR") {
   }
 }
 
-/** "2026-10" → "2026-10-01" (validated); falls back to the current month. */
+/** "2026-10" → "2026-10-01" (validated); falls back to the current month in IST. */
 export function monthToPeriod(month: string | undefined, now = new Date()): string {
   if (month && /^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return `${month}-01`;
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  return `${toISODate(now).slice(0, 7)}-01`;
 }
 
 /** Shift a yyyy-MM-01 period by n months. */

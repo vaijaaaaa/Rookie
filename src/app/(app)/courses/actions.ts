@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { safeNextPath } from "@/app/auth/_lib/redirects";
 import { getUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { errorMessage } from "@/lib/utils";
@@ -14,7 +15,7 @@ const slug = z.string().min(1).max(200);
 /** Form action: enroll in a course (RPC) then go to `next` (first/next lesson or overview). */
 export async function enrollInCourseAction(formData: FormData): Promise<void> {
   const parsed = z
-    .object({ courseId: uuid, courseSlug: slug, next: z.string().regex(/^\/(?!\/)/).optional() })
+    .object({ courseId: uuid, courseSlug: slug, next: z.string().max(2000).optional() })
     .safeParse({
       courseId: formData.get("courseId"),
       courseSlug: formData.get("courseSlug"),
@@ -32,7 +33,7 @@ export async function enrollInCourseAction(formData: FormData): Promise<void> {
 
   revalidatePath("/courses");
   revalidatePath(`/courses/${courseSlug}`);
-  redirect(next ?? `/courses/${courseSlug}`);
+  redirect(safeNextPath(next) ?? `/courses/${courseSlug}`);
 }
 
 const completionSchema = z.object({

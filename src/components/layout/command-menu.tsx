@@ -21,7 +21,8 @@ export function CommandMenu({ role }: { role: UserRole }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
+  // Results are tagged with the query they answer so stale ones are never shown for a newer query.
+  const [results, setResults] = useState<{ q: string; items: SearchResult[] } | null>(null);
   const [, startTransition] = useTransition();
 
   useEffect(() => {
@@ -38,12 +39,17 @@ export function CommandMenu({ role }: { role: UserRole }) {
   useEffect(() => {
     const q = query.trim();
     if (q.length < 2) return;
+    let cancelled = false;
     const supabase = createClient();
     const t = setTimeout(async () => {
       const { data } = await supabase.rpc("search_content", { p_query: q });
-      startTransition(() => setResults((data as SearchResult[] | null) ?? []));
+      if (cancelled) return;
+      startTransition(() => setResults({ q, items: (data as SearchResult[] | null) ?? [] }));
     }, 180);
-    return () => clearTimeout(t);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
   }, [query]);
 
   const go = (href: string) => {
@@ -52,7 +58,10 @@ export function CommandMenu({ role }: { role: UserRole }) {
     router.push(href);
   };
 
-  const visible = query.trim().length >= 2 ? results : [];
+  const trimmed = query.trim();
+  const searching = trimmed.length >= 2;
+  const loading = searching && results?.q !== trimmed;
+  const visible = searching && !loading ? (results?.items ?? []) : [];
   const grouped = (Object.keys(KIND_META) as SearchResult["kind"][])
     .map((kind) => ({ kind, items: visible.filter((r) => r.kind === kind) }))
     .filter((g) => g.items.length > 0);
@@ -78,7 +87,11 @@ export function CommandMenu({ role }: { role: UserRole }) {
               onValueChange={setQuery}
             />
             <CommandList>
-              {query.trim().length >= 2 ? <CommandEmpty>No results for “{query}”.</CommandEmpty> : null}
+              {loading ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">Searching…</p>
+              ) : searching ? (
+                <CommandEmpty>No results for “{query}”.</CommandEmpty>
+              ) : null}
               {grouped.map((g) => {
                 const Icon = KIND_META[g.kind].icon;
                 return (
@@ -95,7 +108,7 @@ export function CommandMenu({ role }: { role: UserRole }) {
                   </CommandGroup>
                 );
               })}
-              {query.trim().length < 2 ? (
+              {!searching ? (
                 <CommandGroup heading="Go to">
                   {NAV[role].main.map((item) => (
                     <CommandItem key={item.href} value={item.href} onSelect={() => go(item.href)}>

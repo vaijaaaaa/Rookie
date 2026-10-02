@@ -20,23 +20,25 @@ function useTypewriter(words: string[]) {
     let deleting = true;
     let timer: ReturnType<typeof setTimeout>;
     const tick = () => {
+      let delay: number;
       if (deleting) {
         len--;
+        delay = 45;
         if (len === 0) {
+          // Pause on the empty slot before typing the next word.
           deleting = false;
           word = (word + 1) % words.length;
+          delay = 250;
         }
       } else {
         len++;
+        delay = 90;
       }
       const target = words[word]!;
       setText(target.slice(0, len));
-      let delay = deleting ? 45 : 90;
       if (!deleting && len === target.length) {
         deleting = true;
         delay = 2200;
-      } else if (deleting && len === 0) {
-        delay = 250;
       }
       timer = setTimeout(tick, delay);
     };
@@ -79,9 +81,10 @@ export function HeroHeadline() {
   return (
     <h1 id="hero-title" className="text-[2.6rem] leading-[1.02] font-semibold tracking-[-0.04em] text-balance sm:text-6xl lg:text-7xl">
       <span className="sr-only">The CS fundamentals every top engineer knows. Structured.</span>
-      <span aria-hidden className="block">
-        Everything a{" "}
-        <span className="inline-flex min-w-[4ch] items-baseline text-muted-foreground">
+      {/* The company gets its own non-wrapping line below lg so typing never re-wraps the headline (no height jump). */}
+      <span aria-hidden className="block lg:whitespace-nowrap">
+        Everything a<span className="hidden lg:inline"> </span>
+        <span className="flex min-h-[1.02em] items-baseline justify-center whitespace-nowrap text-muted-foreground lg:inline-flex lg:min-w-[4ch]">
           {company}
           <span className="landing-caret ml-0.5 inline-block h-[0.8em] w-[3px] translate-y-[0.06em] self-center bg-brand" />
         </span>

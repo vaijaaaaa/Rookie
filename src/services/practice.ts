@@ -155,43 +155,57 @@ export async function listProblems(
   userId: string,
   params: ProblemListParams,
 ): Promise<{ rows: ProblemRow[]; count: number; page: number; pageCount: number }> {
-  const page = Math.max(1, Math.floor(params.page ?? 1));
+  let page = Math.max(1, Math.floor(params.page ?? 1));
   const supabase = await createClient();
   const activity = await getMyProblemActivity(userId);
   const empty = { rows: [], count: 0, page, pageCount: 1 };
-
-  let query = supabase
-    .from("coding_problems")
-    .select("id, slug, title, difficulty, topic, tags", { count: "exact" })
-    .eq("is_published", true);
-
-  const q = params.q?.trim();
-  if (q) query = query.ilike("title", likePattern(q.slice(0, 100)));
-  if (params.difficulty) query = query.eq("difficulty", params.difficulty);
-  if (params.topic) query = query.eq("topic", params.topic);
-  if (params.tag) query = query.contains("tags", [params.tag]);
-
-  // Status filters are applied as id lists derived from my submissions.
   const solvedIds = [...activity.solved];
   const attemptedIds = [...activity.attempts.keys()];
+  const attemptedOnlyIds = attemptedIds.filter((id) => !activity.solved.has(id));
   const inList = (ids: string[]) => `(${ids.join(",")})`;
-  if (params.status === "solved") {
-    if (solvedIds.length === 0) return empty;
-    query = query.in("id", solvedIds);
-  } else if (params.status === "attempted") {
-    const ids = attemptedIds.filter((id) => !activity.solved.has(id));
-    if (ids.length === 0) return empty;
-    query = query.in("id", ids);
-  } else if (params.status === "todo" && attemptedIds.length > 0) {
-    query = query.not("id", "in", inList(attemptedIds));
-  }
 
-  const from = (page - 1) * PROBLEMS_PAGE_SIZE;
-  const { data, count } = await query
-    .order("difficulty", { ascending: true })
-    .order("title", { ascending: true })
-    .range(from, from + PROBLEMS_PAGE_SIZE - 1)
-    .overrideTypes<ProblemListItem[], { merge: false }>();
+  // Built per call so the same filters can be re-run (e.g. to clamp an out-of-range page).
+  const buildQuery = (head = false) => {
+    let query = supabase
+      .from("coding_problems")
+      .select("id, slug, title, difficulty, topic, tags", { count: "exact", head })
+      .eq("is_published", true);
+
+    const q = params.q?.trim();
+    if (q) query = query.ilike("title", likePattern(q.slice(0, 100)));
+    if (params.difficulty) query = query.eq("difficulty", params.difficulty);
+    if (params.topic) query = query.eq("topic", params.topic);
+    if (params.tag) query = query.contains("tags", [params.tag]);
+
+    // Status filters are applied as id lists derived from my submissions.
+    if (params.status === "solved") query = query.in("id", solvedIds);
+    else if (params.status === "attempted") query = query.in("id", attemptedOnlyIds);
+    else if (params.status === "todo" && attemptedIds.length > 0) query = query.not("id", "in", inList(attemptedIds));
+    return query;
+  };
+
+  if (params.status === "solved" && solvedIds.length === 0) return empty;
+  if (params.status === "attempted" && attemptedOnlyIds.length === 0) return empty;
+
+  const fetchPage = (p: number) => {
+    const from = (p - 1) * PROBLEMS_PAGE_SIZE;
+    return buildQuery()
+      .order("difficulty", { ascending: true })
+      .order("title", { ascending: true })
+      .range(from, from + PROBLEMS_PAGE_SIZE - 1)
+      .overrideTypes<ProblemListItem[], { merge: false }>();
+  };
+
+  let { data, count, error } = await fetchPage(page);
+  // ?page= past the end: PostgREST answers with a range error — clamp to the last page instead.
+  if (page > 1 && (error || (data ?? []).length === 0)) {
+    const { count: total } = await buildQuery(true);
+    const last = Math.max(1, Math.ceil((total ?? 0) / PROBLEMS_PAGE_SIZE));
+    if (last < page) {
+      page = last;
+      ({ data, count, error } = await fetchPage(page));
+    }
+  }
 
   const rows: ProblemRow[] = (data ?? []).map((p) => ({
     ...p,
@@ -249,6 +263,18 @@ export async function getMySubmissions(problemId: string, userId: string, limit 
     .limit(limit)
     .overrideTypes<SubmissionSummary[], { merge: false }>();
   return data ?? [];
+}
+
+/** Whether the user has ever had an accepted submission (not limited to the latest N submissions). */
+export async function hasSolvedProblem(problemId: string, userId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("coding_submissions")
+    .select("id", { count: "exact", head: true })
+    .eq("problem_id", problemId)
+    .eq("user_id", userId)
+    .eq("verdict", "accepted");
+  return (count ?? 0) > 0;
 }
 
 // ---------------------------------------------------------------------------

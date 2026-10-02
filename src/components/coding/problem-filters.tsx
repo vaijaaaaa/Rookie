@@ -27,17 +27,27 @@ export function ProblemFilters({ topics, tags }: { topics: string[]; tags: strin
     startTransition(() => router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false }));
   };
 
-  // Debounced search
+  // Resync the box when the URL's ?q changes from outside (Clear, back/forward, links),
+  // without clobbering what the user is mid-typing (e.g. a trailing space).
   const current = params.get("q") ?? "";
+  const [prevCurrent, setPrevCurrent] = useState(current);
+  const [typed, setTyped] = useState(false);
+  if (current !== prevCurrent) {
+    setPrevCurrent(current);
+    if (q.trim() !== current) setQ(current);
+    setTyped(false);
+  }
+
+  // Debounced search — only pushes when the user actually typed.
   const updateRef = useRef(update);
   useEffect(() => {
     updateRef.current = update;
   });
   useEffect(() => {
-    if (q.trim() === current) return;
+    if (!typed || q.trim() === current) return;
     const id = setTimeout(() => updateRef.current({ q: q.trim() || null }), 300);
     return () => clearTimeout(id);
-  }, [q, current]);
+  }, [q, current, typed]);
 
   // "/" focuses search
   useEffect(() => {
@@ -62,7 +72,10 @@ export function ProblemFilters({ topics, tags }: { topics: string[]; tags: strin
           ref={inputRef}
           type="search"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setTyped(true);
+          }}
           placeholder="Search problems…"
           aria-label="Search problems"
           className="pr-10 pl-8"
@@ -132,6 +145,7 @@ export function ProblemFilters({ topics, tags }: { topics: string[]; tags: strin
           className="self-start text-muted-foreground lg:self-auto"
           onClick={() => {
             setQ("");
+            setTyped(false);
             startTransition(() => router.replace(pathname, { scroll: false }));
           }}
         >

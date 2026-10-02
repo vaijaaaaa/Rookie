@@ -62,6 +62,6 @@ export async function deletePayment(id: string): Promise<ActionResult> {
   const { data, error } = await supabase.from("student_payments").delete().eq("id", parsedId.data).select("user_id");
   if (error) return { ok: false, error: errorMessage(error) };
   if (!data?.length) return { ok: false, error: "Payment not found" };
-  revalidate((data[0] as { user_id: string }).user_id);
+  revalidate((data[0] as { user_id: string | null }).user_id ?? undefined);
   return { ok: true, message: "Payment deleted" };
 }

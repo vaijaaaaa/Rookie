@@ -41,7 +41,10 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: S
   const role = isUserRole(sp.role) ? sp.role : null;
   const page = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
 
-  const [{ users, total, error }, counts] = await Promise.all([listUsers({ page, q, role }), getRoleCounts()]);
+  const [{ users, total, page: shownPage, error }, counts] = await Promise.all([
+    listUsers({ page, q, role }),
+    getRoleCounts(),
+  ]);
 
   const heading =
     role === "student" ? "Manage students" : role === "admin" ? "Admins" : "Users";
@@ -173,7 +176,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: S
             </TableBody>
           </Table>
           <Pagination
-            page={page}
+            page={shownPage}
             pageSize={USERS_PAGE_SIZE}
             total={total}
             basePath="/admin/users"

@@ -61,6 +61,8 @@ type ItemRow = AgendaItem & {
   course: { id: string; title: string; slug: string } | null;
   lesson: { id: string; title: string; slug: string; course: { slug: string } | null } | null;
   problem: { slug: string } | null;
+  /** The linked class (if any and visible) — supplies Join link, status and real time. */
+  class: { starts_at: string; duration_minutes: number; status: ClassStatus; meeting_url: string | null } | null;
 };
 
 type AgendaRow = {
@@ -141,7 +143,7 @@ export const getDayAgenda = cache(async (profile: Pick<Profile, "id" | "timezone
     const { data } = await supabase
       .from("agenda_items")
       .select(
-        "*, course:courses(id, title, slug), lesson:lessons(id, title, slug, course:courses(slug)), problem:coding_problems(slug)",
+        "*, course:courses(id, title, slug), lesson:lessons(id, title, slug, course:courses(slug)), problem:coding_problems(slug), class:classes(starts_at, duration_minutes, status, meeting_url)",
       )
       .in("agenda_id", [...agendaById.keys()])
       .overrideTypes<ItemRow[], { merge: false }>();
@@ -177,6 +179,16 @@ export const getDayAgenda = cache(async (profile: Pick<Profile, "id" | "timezone
         : i.problem
           ? `/practice/${i.problem.slug}`
           : (lessonHref ?? (i.course ? `/courses/${i.course.slug}` : null));
+    // A linked class replaces the derived class entry, so carry its real time (unless the item sets one),
+    // Join link and status onto the item.
+    const cls = i.class;
+    let start = hhmm(i.start_time);
+    let end = hhmm(i.end_time);
+    if (cls && !i.start_time) {
+      const endAt = new Date(Date.parse(cls.starts_at) + cls.duration_minutes * 60_000);
+      start = hhmmInTz(cls.starts_at, tz);
+      end = dateInTz(endAt, tz) === dateInTz(cls.starts_at, tz) ? hhmmInTz(endAt, tz) : null;
+    }
     entries.push({
       key: `item:${i.id}`,
       kind: "item",
@@ -184,8 +196,8 @@ export const getDayAgenda = cache(async (profile: Pick<Profile, "id" | "timezone
       title: i.title,
       description: i.description,
       type: i.type,
-      start: hhmm(i.start_time),
-      end: hhmm(i.end_time),
+      start,
+      end,
       priority: i.priority,
       status,
       done: status === "done",
@@ -196,8 +208,8 @@ export const getDayAgenda = cache(async (profile: Pick<Profile, "id" | "timezone
         ? { id: i.lesson.id, title: i.lesson.title, slug: i.lesson.slug, courseSlug: i.lesson.course?.slug ?? null }
         : null,
       href,
-      classStatus: null,
-      meetingUrl: null,
+      classStatus: cls?.status ?? null,
+      meetingUrl: cls?.meeting_url ?? null,
       submissionStatus: null,
       raw: { start_time: i.start_time, end_time: i.end_time, course_id: i.course_id, lesson_id: i.lesson_id },
     });
@@ -205,7 +217,7 @@ export const getDayAgenda = cache(async (profile: Pick<Profile, "id" | "timezone
 
   for (const c of classesRes.data ?? []) {
     if (linkedClassIds.has(c.id) || dateInTz(c.starts_at, tz) !== date) continue;
-    const endAt = new Date(new Date(c.starts_at).getTime() + c.duration_minutes * 60_000);
+    const endAt = new Date(Date.parse(c.starts_at) + c.duration_minutes * 60_000);
     entries.push({
       key: `class:${c.id}`,
       kind: "class",

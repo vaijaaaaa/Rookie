@@ -16,13 +16,20 @@ import { Megaphone, Wrench } from "lucide-react";
 export async function AppShell({ profile, children }: { profile: Profile; children: React.ReactNode }) {
   const supabase = await createClient();
   const settingsPromise = getShellSettings();
-  const { data: notifications } = await supabase
-    .from("notifications")
-    .select("*")
-    .eq("user_id", profile.id)
-    .order("created_at", { ascending: false })
-    .limit(20)
-    .overrideTypes<Notification[], { merge: false }>();
+  const [{ data: notifications }, { count: unreadCount }] = await Promise.all([
+    supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", profile.id)
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .overrideTypes<Notification[], { merge: false }>(),
+    supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", profile.id)
+      .is("read_at", null),
+  ]);
 
   const home = homeForRole(profile.role);
   const settings = await settingsPromise;
@@ -39,12 +46,12 @@ export async function AppShell({ profile, children }: { profile: Profile; childr
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/90 px-4 backdrop-blur md:px-6">
-            <MobileSidebar role={profile.role} />
+            <MobileSidebar role={profile.role} home={home} />
             <div className="flex-1">
               <CommandMenu role={profile.role} />
             </div>
             <ThemeToggle />
-            <NotificationBell userId={profile.id} initial={notifications ?? []} />
+            <NotificationBell userId={profile.id} initial={notifications ?? []} unreadCount={unreadCount ?? 0} />
             <UserMenu profile={profile} />
           </header>
           {settings.announcementBanner ? (

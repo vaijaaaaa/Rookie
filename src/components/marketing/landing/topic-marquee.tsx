@@ -4,19 +4,19 @@ const ROWS = [
 ];
 
 function Row({ items, reverse, duration }: { items: string[]; reverse?: boolean; duration: string }) {
-  // Duplicated once so the -50% translate loops seamlessly.
+  // Duplicated once so the -50% translate loops seamlessly (per-item margin, not gap, keeps both halves equal).
   const loop = [...items, ...items];
   return (
     <div className="landing-marquee overflow-hidden">
       <ul
-        className="landing-marquee-track flex w-max gap-3 py-1.5"
+        className="landing-marquee-track flex w-max py-1.5"
         style={{ "--dur": duration, animationDirection: reverse ? "reverse" : undefined } as React.CSSProperties}
       >
         {loop.map((t, i) => (
           <li
             key={`${t}-${i}`}
             aria-hidden={i >= items.length}
-            className="rounded-full border bg-card px-4 py-1.5 font-mono text-xs whitespace-nowrap text-muted-foreground"
+            className="mr-3 rounded-full border bg-card px-4 py-1.5 font-mono text-xs whitespace-nowrap text-muted-foreground"
           >
             {t}
           </li>

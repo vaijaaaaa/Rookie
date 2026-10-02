@@ -6,7 +6,7 @@ import { Workspace } from "@/components/coding/workspace";
 import { QuickNote } from "@/components/notes/quick-note";
 import { requireProfile } from "@/lib/auth/session";
 import { getNotesFor } from "@/services/notes";
-import { createSubmission, getMySubmissions, getProblemBySlug, getSampleTests } from "@/services/practice";
+import { createSubmission, getMySubmissions, getProblemBySlug, getSampleTests, hasSolvedProblem } from "@/services/practice";
 import type { CodingProblem } from "@/types";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -119,10 +119,11 @@ export default async function ProblemPage({ params }: Props) {
   const problem = await getProblemBySlug(slug);
   if (!problem) notFound();
 
-  const [tests, submissions, notes] = await Promise.all([
+  const [tests, submissions, notes, solved] = await Promise.all([
     getSampleTests(problem.id),
     getMySubmissions(problem.id, profile.id),
     getNotesFor({ problem_id: problem.id }),
+    hasSolvedProblem(problem.id, profile.id),
   ]);
 
   return (
@@ -138,6 +139,7 @@ export default async function ProblemPage({ params }: Props) {
         starter_code: problem.starter_code,
       }}
       sampleTests={tests.map((t) => ({ id: t.id, input: t.input, expected: t.expected_output }))}
+      initiallySolved={solved}
       initialSubmissions={submissions}
       description={<Description problem={problem} />}
       solution={problem.solution_explanation.trim() ? <Markdown>{problem.solution_explanation}</Markdown> : null}

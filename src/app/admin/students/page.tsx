@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LocalTime } from "@/components/instructor/local-time";
 import { SearchForm } from "@/components/instructor/search-form";
+import { sanitizeSearch } from "@/services/admin";
 import { requireStaff } from "@/services/instructor/context";
 
 export const metadata = { title: "Students" };
@@ -25,7 +26,7 @@ interface OverviewRow {
 
 export default async function StudentsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q: rawQ } = await searchParams;
-  const q = (rawQ ?? "").replace(/[,()*%\\]/g, " ").trim().slice(0, 80);
+  const q = sanitizeSearch(rawQ ?? "");
   const ctx = await requireStaff();
   let query = ctx.supabase.rpc("get_student_overview");
   if (q) query = query.or(`full_name.ilike.*${q}*,email.ilike.*${q}*`);

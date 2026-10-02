@@ -199,8 +199,9 @@ export async function getRoadmapPath(roadmap: RoadmapDetail, signedIn: boolean):
           title: t.title,
           description: t.description,
           href: hrefFor(t),
-          // Lesson-linked topics follow lesson completion; everything else is manual.
-          manual: !t.lesson_id,
+          // Lesson-linked topics follow lesson completion; everything else is manual — including topics whose
+          // lesson the viewer can't see (RLS hides it), which would otherwise be impossible to complete.
+          manual: !t.lesson_id || !t.lesson,
           completed,
           state,
         };

@@ -53,7 +53,7 @@ export default async function AssignmentReviewPage({
   const subs = filter === "all" ? all : all.filter((s) => s.status === filter);
   const selected = all.find((s) => s.id === sp.submission) ?? subs.find((s) => s.status === "submitted") ?? subs[0] ?? null;
   const count = (st: string) => all.filter((s) => s.status === st).length;
-  const isLate = (s: Sub) => !!s.submitted_at && s.submitted_at > assignment.due_at;
+  const isLate = (s: Sub) => !!s.submitted_at && Date.parse(s.submitted_at) > Date.parse(assignment.due_at);
   const href = (params: { status?: string; submission?: string }) => {
     const q = new URLSearchParams();
     const st = params.status ?? filter;

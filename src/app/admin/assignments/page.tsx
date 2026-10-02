@@ -12,6 +12,7 @@ import { LocalTime } from "@/components/instructor/local-time";
 import { requireStaff } from "@/services/instructor/context";
 import { getCourseOptions } from "@/services/instructor/scope";
 import { getEnrollmentCounts } from "@/services/instructor/assignments";
+import { fetchAllRows } from "@/lib/supabase/paging";
 import { nowIso } from "@/services/instructor/time";
 import { percent } from "@/lib/utils";
 import type { Assignment, SubmissionStatus } from "@/types";
@@ -27,7 +28,7 @@ export default async function AssignmentsPage({ searchParams }: { searchParams: 
   const courses = await getCourseOptions(ctx);
   const selected = courses.filter((c) => !course || c.id === course);
   const courseIds = selected.map((c) => c.id);
-  const now = nowIso();
+  const nowMs = Date.parse(nowIso());
 
   const { data } = courseIds.length
     ? await ctx.supabase
@@ -43,17 +44,23 @@ export default async function AssignmentsPage({ searchParams }: { searchParams: 
 
   const [subsRes, enrolled] = await Promise.all([
     ids.length
-      ? ctx.supabase
-          .from("assignment_submissions")
-          .select("assignment_id, status")
-          .in("assignment_id", ids)
-          .neq("status", "in_progress")
-          .overrideTypes<{ assignment_id: string; status: SubmissionStatus }[], { merge: false }>()
-      : Promise.resolve({ data: [] as { assignment_id: string; status: SubmissionStatus }[] }),
+      ? fetchAllRows(
+          (from, to) =>
+            ctx.supabase
+              .from("assignment_submissions")
+              .select("assignment_id, status")
+              .in("assignment_id", ids)
+              .neq("status", "in_progress")
+              .order("id")
+              .range(from, to)
+              .overrideTypes<{ assignment_id: string; status: SubmissionStatus }[], { merge: false }>(),
+          { maxRows: 100_000 },
+        )
+      : Promise.resolve({ rows: [] as { assignment_id: string; status: SubmissionStatus }[] }),
     getEnrollmentCounts(ctx, [...new Set(assignments.map((a) => a.course_id))]),
   ]);
   const counts = new Map<string, { submitted: number; reviewed: number }>();
-  for (const s of subsRes.data ?? []) {
+  for (const s of subsRes.rows) {
     const c = counts.get(s.assignment_id) ?? { submitted: 0, reviewed: 0 };
     if (s.status === "reviewed") c.reviewed += 1;
     else c.submitted += 1;
@@ -149,7 +156,7 @@ export default async function AssignmentsPage({ searchParams }: { searchParams: 
                         </TableCell>
                         <TableCell className="font-mono text-xs whitespace-nowrap">
                           <LocalTime value={a.due_at} format="short" />
-                          {a.due_at < now ? <span className="ml-1.5 text-muted-foreground">· closed</span> : null}
+                          {Date.parse(a.due_at) < nowMs ? <span className="ml-1.5 text-muted-foreground">· closed</span> : null}
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
                           <div className="flex items-center gap-2">

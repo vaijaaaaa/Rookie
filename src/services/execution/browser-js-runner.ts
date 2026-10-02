@@ -112,12 +112,13 @@ function __normalize(v) {
   }
 }
 
-const EPS = 1e-6;
 function __equal(a, b) {
   if (typeof a === "number" && typeof b === "number") {
     if (a === b) return true; // also -0 === 0
     if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
-    return Math.abs(a - b) <= EPS * Math.max(1, Math.abs(a), Math.abs(b));
+    // Integers must match exactly; only fractional answers get a small float tolerance.
+    if (Number.isInteger(a) && Number.isInteger(b)) return false;
+    return Math.abs(a - b) <= 1e-6 + 1e-9 * Math.max(Math.abs(a), Math.abs(b));
   }
   if (a === b) return true;
   if (a === null || b === null || typeof a !== "object" || typeof b !== "object") return false;

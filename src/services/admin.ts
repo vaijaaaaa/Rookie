@@ -5,6 +5,7 @@ import { APP_TIME_ZONE } from "@/components/agenda/tz";
 
 /** "Now" as an IST calendar date so week/day buckets line up with IST. */
 const nowIST = () => new TZDate(Date.now(), APP_TIME_ZONE);
+import { fetchAllRows } from "@/lib/supabase/paging";
 import { createClient } from "@/lib/supabase/server";
 import type { ActivityLog, ActivityType, AttendanceStatus, Profile, UserRole } from "@/types";
 
@@ -70,7 +71,7 @@ export function isUserRole(v: unknown): v is UserRole {
 // ---------------------------------------------------------------------------
 
 /** Strip characters that would break a PostgREST `or=(...)` filter or act as wildcards. */
-function sanitizeSearch(q: string) {
+export function sanitizeSearch(q: string) {
   return q.replace(/[%_*,()"\\:]/g, " ").replace(/\s+/g, " ").trim().slice(0, 80);
 }
 
@@ -153,17 +154,30 @@ export async function getRoleCounts(): Promise<Record<UserRole | "all", number>>
 
 export async function listUsers({ page, q, role }: UserListParams) {
   const supabase = await createClient();
-  const from = (page - 1) * USERS_PAGE_SIZE;
-  let query = supabase
-    .from("profiles")
-    .select("id, email, full_name, username, avatar_url, role, onboarded_at, created_at", { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range(from, from + USERS_PAGE_SIZE - 1);
-  if (role) query = query.eq("role", role);
   const term = sanitizeSearch(q);
-  if (term) query = query.or(`full_name.ilike.%${term}%,email.ilike.%${term}%`);
+  const pageQuery = (p: number) => {
+    const from = (p - 1) * USERS_PAGE_SIZE;
+    let query = supabase
+      .from("profiles")
+      .select("id, email, full_name, username, avatar_url, role, onboarded_at, created_at", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(from, from + USERS_PAGE_SIZE - 1);
+    if (role) query = query.eq("role", role);
+    if (term) query = query.or(`full_name.ilike.%${term}%,email.ilike.%${term}%`);
+    return query.overrideTypes<Omit<AdminUserRow, "last_active">[], { merge: false }>();
+  };
 
-  const { data, count, error } = await query.overrideTypes<Omit<AdminUserRow, "last_active">[], { merge: false }>();
+  let res = await pageQuery(page);
+  // ?page= past the end: PostgREST answers 416 / PGRST103. Fall back to the last page.
+  if (res.error && (res.error.code === "PGRST103" || res.status === 416)) {
+    let countQuery = supabase.from("profiles").select("id", { count: "exact", head: true });
+    if (role) countQuery = countQuery.eq("role", role);
+    if (term) countQuery = countQuery.or(`full_name.ilike.%${term}%,email.ilike.%${term}%`);
+    const { count } = await countQuery;
+    page = Math.max(1, Math.ceil((count ?? 0) / USERS_PAGE_SIZE));
+    res = await pageQuery(page);
+  }
+  const { data, count, error } = res;
   const rows = data ?? [];
 
   // Last activity for this page only (bounded to the last 90 days).
@@ -183,6 +197,7 @@ export async function listUsers({ page, q, role }: UserListParams) {
   return {
     users: rows.map((r) => ({ ...r, last_active: lastActive.get(r.id) ?? null })) as AdminUserRow[],
     total: count ?? 0,
+    page,
     error: error?.message ?? null,
   };
 }
@@ -315,7 +330,7 @@ export async function getPlatformSettings(): Promise<{ settings: PlatformSetting
     if (typeof row.value === typeof def) {
       (settings as unknown as Record<string, unknown>)[row.key] = row.value;
     }
-    if (!updatedAt || row.updated_at > updatedAt) updatedAt = row.updated_at;
+    if (!updatedAt || Date.parse(row.updated_at) > Date.parse(updatedAt)) updatedAt = row.updated_at;
   }
   return { settings, updatedAt };
 }
@@ -332,23 +347,28 @@ export interface PlatformAnalytics {
   activityByType: { type: ActivityType; label: string; count: number }[];
 }
 
-const ACTIVE_SCAN_LIMIT = 20000;
+const ACTIVE_SCAN_LIMIT = 20_000;
 
 export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
   const supabase = await createClient();
   const now = new Date();
   const since30 = subDays(now, 30).toISOString();
-  const since7 = subDays(now, 7).toISOString();
+  const since7Ms = subDays(now, 7).getTime();
 
   const [totalRes, activeRes, coursesCompletedRes, byType, pastDueRes] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }),
-    supabase
-      .from("activity_logs")
-      .select("user_id, occurred_at")
-      .gte("occurred_at", since30)
-      .order("occurred_at", { ascending: false })
-      .limit(ACTIVE_SCAN_LIMIT)
-      .overrideTypes<Pick<ActivityLog, "user_id" | "occurred_at">[], { merge: false }>(),
+    fetchAllRows(
+      (from, to) =>
+        supabase
+          .from("activity_logs")
+          .select("user_id, occurred_at")
+          .gte("occurred_at", since30)
+          .order("occurred_at", { ascending: false })
+          .order("id", { ascending: true })
+          .range(from, to)
+          .overrideTypes<Pick<ActivityLog, "user_id" | "occurred_at">[], { merge: false }>(),
+      { maxRows: ACTIVE_SCAN_LIMIT },
+    ),
     supabase.from("activity_logs").select("id", { count: "exact", head: true }).eq("type", "course_completed"),
     Promise.all(
       ACTIVITY_TYPES.map((t) =>
@@ -370,12 +390,13 @@ export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
       .overrideTypes<{ id: string; course_id: string }[], { merge: false }>(),
   ]);
 
-  const activeRows = activeRes.data ?? [];
+  const activeRows = activeRes.rows;
   const users30 = new Set<string>();
   const users7 = new Set<string>();
   for (const r of activeRows) {
     users30.add(r.user_id);
-    if (r.occurred_at >= since7) users7.add(r.user_id);
+    // Compare instants: the DB returns +05:30 offsets, not "Z" strings.
+    if (Date.parse(r.occurred_at) >= since7Ms) users7.add(r.user_id);
   }
 
   // Assignments: submitted vs expected (past-due published assignments x enrolled students).
@@ -409,7 +430,7 @@ export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
     totalUsers: totalRes.count ?? 0,
     active7d: users7.size,
     active30d: users30.size,
-    activeTruncated: activeRows.length >= ACTIVE_SCAN_LIMIT,
+    activeTruncated: activeRes.truncated,
     coursesCompleted: coursesCompletedRes.count ?? 0,
     assignmentsSubmitted,
     assignmentsExpected,
