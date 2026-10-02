@@ -4,7 +4,7 @@ import { SUPABASE_KEY, SUPABASE_URL } from "./env";
 
 const PROTECTED_PREFIXES = [
   "/dashboard", "/agenda", "/attendance", "/progress", "/practice", "/assignments",
-  "/notes", "/achievements", "/profile", "/settings", "/onboarding", "/notifications",
+  "/notes", "/daily", "/achievements", "/profile", "/settings", "/onboarding", "/notifications",
   "/class/", "/admin/teaching", "/admin", "/learn",
 ];
 

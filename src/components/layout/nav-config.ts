@@ -1,6 +1,6 @@
 import {
   Award, BarChart3, BookOpen, CalendarCheck, CalendarDays, ClipboardList, Code2, GraduationCap,
-  LayoutDashboard, Map, Megaphone, NotebookPen, Settings, TrendingUp, User, UserCog, Users, Video, Wallet,
+  LayoutDashboard, Lightbulb, Map, Megaphone, NotebookPen, Settings, TrendingUp, User, UserCog, Users, Video, Wallet,
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/types";
@@ -22,6 +22,7 @@ export const NAV: Record<UserRole, { main: NavItem[]; footer: NavItem[] }> = {
       { title: "Courses", href: "/courses", icon: BookOpen, mobile: true },
       { title: "Classes", href: "/classes", icon: Video },
       { title: "Attendance", href: "/attendance", icon: CalendarCheck },
+      { title: "Daily question", href: "/daily", icon: Lightbulb },
       { title: "Practice", href: "/practice", icon: Code2, mobile: true },
       { title: "Progress", href: "/progress", icon: TrendingUp },
       { title: "Assignments", href: "/assignments", icon: ClipboardList },
@@ -44,6 +45,7 @@ export const NAV: Record<UserRole, { main: NavItem[]; footer: NavItem[] }> = {
       { title: "Roadmaps", href: "/admin/roadmaps", icon: Map },
       { title: "Assignments", href: "/admin/assignments", icon: ClipboardList },
       { title: "Problems", href: "/admin/problems", icon: Code2 },
+      { title: "Daily questions", href: "/admin/daily", icon: Lightbulb },
       { title: "Agendas", href: "/admin/agendas", icon: CalendarDays },
       { title: "Announcements", href: "/admin/announcements", icon: Megaphone },
       { title: "Users", href: "/admin/users", icon: UserCog },
