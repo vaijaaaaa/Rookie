@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { TZDate } from "@date-fns/tz";
 import { addMonths, format } from "date-fns";
+import { APP_TIME_ZONE } from "@/components/agenda/tz";
 import { CalendarCheck, CalendarX2, Clock, ShieldCheck, Sigma } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
@@ -33,7 +35,7 @@ function currentTime() {
 export default async function AttendancePage({ searchParams }: { searchParams: Promise<{ month?: string | string[] }> }) {
   const [profile, sp] = await Promise.all([requireProfile(), searchParams]);
   const now = currentTime();
-  const today = new Date(now);
+  const today = new TZDate(now, APP_TIME_ZONE);
   const month = parseMonth(sp.month, today);
 
   const [records, monthClasses] = await Promise.all([

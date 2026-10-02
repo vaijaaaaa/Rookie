@@ -3,15 +3,9 @@
  * server and client. Dates are "yyyy-MM-dd" strings, times "HH:mm".
  */
 
-export function safeTimeZone(tz: string | null | undefined): string {
-  if (!tz) return "UTC";
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone: tz });
-    return tz;
-  } catch {
-    return "UTC";
-  }
-}
+/** The whole app runs on Indian Standard Time (UTC+5:30, no DST). */
+export const APP_TIME_ZONE = "Asia/Kolkata";
+export const APP_TIME_ZONE_LABEL = "IST";
 
 const dateFmtCache = new Map<string, Intl.DateTimeFormat>();
 function fmt(tz: string, opts: Intl.DateTimeFormatOptions, locale = "en-US") {

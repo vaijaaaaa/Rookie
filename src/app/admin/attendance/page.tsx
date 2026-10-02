@@ -10,6 +10,7 @@ import { requireStaff } from "@/services/instructor/context";
 import { classScopeFilter, getManagedCourseIds } from "@/services/instructor/scope";
 import { CLASS_LIST_SELECT, type ClassListRow } from "@/services/instructor/classes";
 import { DAY, dayBoundsInTz, nowIso } from "@/services/instructor/time";
+import { APP_TIME_ZONE } from "@/components/agenda/tz";
 
 export const metadata = { title: "Attendance" };
 
@@ -29,7 +30,7 @@ export default async function AttendancePage() {
   const courseIds = await getManagedCourseIds(ctx);
   const scope = classScopeFilter(ctx, courseIds);
   const now = nowIso();
-  const today = dayBoundsInTz(ctx.profile.timezone || "UTC", new Date(now));
+  const today = dayBoundsInTz(APP_TIME_ZONE, new Date(now));
 
   let q = ctx.supabase
     .from("classes")

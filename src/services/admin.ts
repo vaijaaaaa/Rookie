@@ -1,5 +1,10 @@
 import "server-only";
+import { TZDate } from "@date-fns/tz";
 import { addDays, format, startOfWeek, subDays, subWeeks } from "date-fns";
+import { APP_TIME_ZONE } from "@/components/agenda/tz";
+
+/** "Now" as an IST calendar date so week/day buckets line up with IST. */
+const nowIST = () => new TZDate(Date.now(), APP_TIME_ZONE);
 import { createClient } from "@/lib/supabase/server";
 import type { ActivityLog, ActivityType, AttendanceStatus, Profile, UserRole } from "@/types";
 
@@ -86,7 +91,7 @@ const EMPTY_STATS: PlatformStats = {
 /** Weekly series for the last `weeks` weeks (Mon-start, matches Postgres date_trunc('week')). */
 export function fillWeeks(rows: { week: string; count: number }[], weeks = 12) {
   const byWeek = new Map(rows.map((r) => [r.week, Number(r.count)]));
-  const start = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const start = startOfWeek(nowIST(), { weekStartsOn: 1 });
   return Array.from({ length: weeks }, (_, i) => {
     const d = subWeeks(start, weeks - 1 - i);
     const key = format(d, "yyyy-MM-dd");
@@ -97,7 +102,7 @@ export function fillWeeks(rows: { week: string; count: number }[], weeks = 12) {
 /** Daily series for the last `days` days, zero-filled. */
 export function fillDays(rows: { day: string; count: number }[], days = 30) {
   const byDay = new Map(rows.map((r) => [r.day, Number(r.count)]));
-  const today = new Date();
+  const today = nowIST();
   return Array.from({ length: days }, (_, i) => {
     const d = subDays(today, days - 1 - i);
     const key = format(d, "yyyy-MM-dd");
@@ -414,6 +419,6 @@ export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
 
 /** Monday of the current week + 6 days, for display. */
 export function currentWeekRange() {
-  const start = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const start = startOfWeek(nowIST(), { weekStartsOn: 1 });
   return `${format(start, "MMM d")} – ${format(addDays(start, 6), "MMM d")}`;
 }

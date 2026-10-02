@@ -39,7 +39,7 @@ export default async function DashboardPage() {
 
         <div className="space-y-4">
           <Suspense fallback={<PanelSkeleton rows={1} rowClassName="h-28" />}>
-            <UpcomingClassPanel profile={profile} />
+            <UpcomingClassPanel />
           </Suspense>
           <Suspense fallback={<PanelSkeleton rows={3} rowClassName="h-12" />}>
             <DueSoonPanel profile={profile} />

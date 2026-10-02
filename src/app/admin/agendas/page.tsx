@@ -7,6 +7,7 @@ import { ConfirmAction } from "@/components/instructor/confirm-action";
 import { requireStaff } from "@/services/instructor/context";
 import { getCourseOptions, getLessonOptions } from "@/services/instructor/scope";
 import { dateInTz, DAY, nowIso, trimClock } from "@/services/instructor/time";
+import { APP_TIME_ZONE } from "@/components/agenda/tz";
 import { formatDate } from "@/lib/utils/format";
 import type { AgendaItem, DailyAgenda } from "@/types";
 import { deleteAgenda, deleteAgendaItem } from "./actions";
@@ -17,7 +18,7 @@ type AgendaRow = DailyAgenda & { courses: { title: string } | null; agenda_items
 
 export default async function AgendasPage() {
   const ctx = await requireStaff();
-  const today = dateInTz(ctx.profile.timezone || "UTC", new Date());
+  const today = dateInTz(APP_TIME_ZONE, new Date());
   const courses = await getCourseOptions(ctx);
   const courseIds = courses.map((c) => c.id);
 

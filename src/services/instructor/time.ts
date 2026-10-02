@@ -40,18 +40,21 @@ export function dayBoundsInTz(timeZone: string, date: Date): { start: string; en
   return { start: new Date(start).toISOString(), end: new Date(end).toISOString() };
 }
 
-/** ISO → value for <input type="datetime-local"> in the runtime's timezone (call in the browser). */
+/** IST is a fixed UTC+5:30 offset (India has no DST). */
+const IST_OFFSET = "+05:30";
+const IST_OFFSET_MS = 330 * 60_000;
+
+/** ISO → value for <input type="datetime-local">, shown in IST regardless of the browser's zone. */
 export function isoToLocalInput(iso: string | null | undefined): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return new Date(d.getTime() + IST_OFFSET_MS).toISOString().slice(0, 16);
 }
 
-/** <input type="datetime-local"> value → ISO, interpreted in the runtime's timezone (call in the browser). */
+/** <input type="datetime-local"> value (entered as IST) → ISO. */
 export function localInputToIso(local: string): string {
-  return new Date(local).toISOString();
+  return new Date(`${local}${local.length === 16 ? ":00" : ""}${IST_OFFSET}`).toISOString();
 }
 
 /** "HH:MM:SS" → "HH:MM" for <input type="time">. */

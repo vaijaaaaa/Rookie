@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { createNote, deleteNote, updateNote, type NoteAttach, type NoteAttachOptions } from "@/services/notes";
+import { APP_TIME_ZONE } from "@/components/agenda/tz";
 import type { Note } from "@/types";
 import { MarkdownField } from "./markdown-field";
 
@@ -34,7 +35,7 @@ type Values = z.infer<typeof schema>;
 export function NoteEditor({
   note,
   options,
-  timeZone = "UTC",
+  timeZone = APP_TIME_ZONE,
   initialAttach,
 }: {
   note?: Note | null;

@@ -6,21 +6,11 @@ import { getUser } from "@/lib/auth/session";
 import { passwordSchema, profileSchema, type PasswordValues, type ProfileValues } from "@/components/profile/schemas";
 import type { ActionResult } from "@/types";
 
-function isValidTimezone(tz: string) {
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone: tz });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 /** Updates the current user's own profile. Role is never sent (and is guarded by a DB trigger). */
 export async function updateProfile(values: ProfileValues): Promise<ActionResult> {
   const parsed = profileSchema.safeParse(values);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   const v = parsed.data;
-  if (!isValidTimezone(v.timezone)) return { ok: false, error: "Unknown timezone" };
 
   const user = await getUser();
   if (!user) return { ok: false, error: "Your session expired. Log in again." };
@@ -33,7 +23,6 @@ export async function updateProfile(values: ProfileValues): Promise<ActionResult
       username: v.username ? v.username.toLowerCase() : null,
       bio: v.bio.trim() ? v.bio.trim() : null,
       avatar_url: v.avatar_url || null,
-      timezone: v.timezone,
       learning_goal: v.learning_goal || null,
     })
     .eq("id", user.id);

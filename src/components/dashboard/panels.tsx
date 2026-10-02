@@ -23,7 +23,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Section } from "@/components/shared/section";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { AGENDA_TYPE_META } from "@/components/agenda/type-meta";
-import { clock12, dateInTz, relativeDayLabel, safeTimeZone, timeInTz } from "@/components/agenda/tz";
+import { clock12, dateInTz, relativeDayLabel, APP_TIME_ZONE, timeInTz } from "@/components/agenda/tz";
 import { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/utils/format";
 import { getDayAgenda, todayFor } from "@/services/agenda";
@@ -44,7 +44,7 @@ import type { ActivityType, Profile } from "@/types";
 // ---------------------------------------------------------------------------
 
 export async function TodayPanel({ profile }: { profile: Profile }) {
-  const today = todayFor(profile);
+  const today = todayFor();
   const day = await getDayAgenda(profile, today);
   const entries = day.entries.slice(0, 7);
   const more = day.entries.length - entries.length;
@@ -253,9 +253,9 @@ export async function RoadmapProgressPanel({ profile }: { profile: Profile }) {
 // Upcoming class
 // ---------------------------------------------------------------------------
 
-export async function UpcomingClassPanel({ profile }: { profile: Profile }) {
+export async function UpcomingClassPanel() {
   const cls = await getUpcomingClass();
-  const tz = safeTimeZone(profile.timezone);
+  const tz = APP_TIME_ZONE;
   return (
     <Section title="Upcoming class" href="/classes" hrefLabel="Schedule">
       {!cls ? (
@@ -265,7 +265,7 @@ export async function UpcomingClassPanel({ profile }: { profile: Profile }) {
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="font-mono text-xs text-muted-foreground">
-                {relativeDayLabel(dateInTz(cls.starts_at, tz), todayFor(profile))} · {timeInTz(cls.starts_at, tz)}
+                {relativeDayLabel(dateInTz(cls.starts_at, tz), todayFor())} · {timeInTz(cls.starts_at, tz)}
                 <span className="text-muted-foreground/70"> · {cls.duration_minutes}m</span>
               </p>
               <p className="mt-1 text-sm font-medium">
@@ -380,8 +380,8 @@ export async function RecentActivityPanel({ profile }: { profile: Profile }) {
 
 export async function DueSoonPanel({ profile }: { profile: Profile }) {
   const rows = await getDueSoon(profile.id, 3);
-  const tz = safeTimeZone(profile.timezone);
-  const today = todayFor(profile);
+  const tz = APP_TIME_ZONE;
+  const today = todayFor();
   return (
     <Section title="Due soon" href="/assignments" hrefLabel="All assignments">
       {rows.length === 0 ? (

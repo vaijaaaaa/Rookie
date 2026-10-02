@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Flame, Map as MapIcon, Target } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { hourInTz, safeTimeZone } from "@/components/agenda/tz";
+import { hourInTz, APP_TIME_ZONE } from "@/components/agenda/tz";
 import { cn, percent } from "@/lib/utils";
 import { LABELS } from "@/lib/utils/format";
 import { getDayAgenda, todayFor } from "@/services/agenda";
@@ -15,7 +15,7 @@ function greetingInTz(tz: string) {
 }
 
 export async function DashboardHero({ profile }: { profile: Profile }) {
-  const today = todayFor(profile);
+  const today = todayFor();
   const [stats, roadmap, day] = await Promise.all([
     getMyStats(),
     getPrimaryRoadmap(profile.primary_roadmap_id),
@@ -28,7 +28,7 @@ export async function DashboardHero({ profile }: { profile: Profile }) {
     <section className="rounded-lg border bg-card p-5" aria-label="Overview">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <Greeting name={firstName(profile)} serverGreeting={greetingInTz(safeTimeZone(profile.timezone))} />
+          <Greeting name={firstName(profile)} serverGreeting={greetingInTz(APP_TIME_ZONE)} />
           <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
             <Target className="size-3.5" />
             {goal ? (

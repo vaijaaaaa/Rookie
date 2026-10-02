@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { addDays, safeTimeZone, startOfWeek, dateInTz } from "@/components/agenda/tz";
+import { addDays, APP_TIME_ZONE, startOfWeek, dateInTz } from "@/components/agenda/tz";
 import type { Achievement, ActivityType, ProblemDifficulty, Profile, UserAchievement } from "@/types";
 import { getCourseProgress, getEnrolledCourses, getMyStats } from "./dashboard";
 
@@ -56,7 +56,7 @@ export async function getActivityCalendar(profile: Pick<Profile, "timezone">, we
   const { data } = await supabase.rpc("get_my_activity", { p_days: weeks * 7 + 7 });
   const counts = new Map(((data as { day: string; count: number }[] | null) ?? []).map((r) => [r.day, r.count]));
 
-  const today = dateInTz(new Date(), safeTimeZone(profile.timezone));
+  const today = dateInTz(new Date(), APP_TIME_ZONE);
   const start = addDays(startOfWeek(today), -(weeks - 1) * 7);
   const grid: ActivityCalendar["weeks"] = [];
   let total = 0;

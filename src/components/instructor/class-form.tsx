@@ -122,7 +122,7 @@ export function ClassForm({
 
       <FormSection title="Schedule">
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Starts at (your timezone)" htmlFor="starts_at_local" error={errors.starts_at_local?.message}>
+          <Field label="Starts at (IST)" htmlFor="starts_at_local" error={errors.starts_at_local?.message}>
             <Input id="starts_at_local" type="datetime-local" className="font-mono" {...register("starts_at_local")} />
           </Field>
           <Field label="Duration (min)" htmlFor="duration_minutes" error={errors.duration_minutes?.message}>

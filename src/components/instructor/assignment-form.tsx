@@ -87,7 +87,7 @@ export function AssignmentForm({
           </Field>
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Due (your timezone)" htmlFor="due_at_local" error={errors.due_at_local?.message}>
+          <Field label="Due (IST)" htmlFor="due_at_local" error={errors.due_at_local?.message}>
             <Input id="due_at_local" type="datetime-local" className="font-mono" {...register("due_at_local")} />
           </Field>
           <Field label="Points" htmlFor="points" error={errors.points?.message}>

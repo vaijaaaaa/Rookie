@@ -1,6 +1,8 @@
 import "server-only";
 import { cache } from "react";
+import { TZDate } from "@date-fns/tz";
 import { addDays } from "date-fns";
+import { APP_TIME_ZONE } from "@/components/agenda/tz";
 import { createClient } from "@/lib/supabase/server";
 import { isClassLive, isClassPast } from "@/components/classes/class-time";
 import type { AttendanceStatus, ClassSession } from "@/types";
@@ -109,9 +111,10 @@ export async function getUpcomingClasses(limit = 5): Promise<ClassListItem[]> {
   return (data ?? []).filter((c) => !isClassPast(c, now));
 }
 
-/** All classes visible to the current user that start on the given local date (yyyy-MM-dd). */
+/** All classes visible to the current user that start on the given IST date (yyyy-MM-dd). */
 export async function getClassesOn(dateISO: string): Promise<ClassListItem[]> {
-  const start = new Date(`${dateISO}T00:00:00`);
+  const [y, m, d] = dateISO.split("-").map(Number);
+  const start = new TZDate(y!, m! - 1, d!, APP_TIME_ZONE);
   if (Number.isNaN(start.getTime())) return [];
   return getClassesBetween(start, addDays(start, 1));
 }

@@ -1,11 +1,12 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { format, formatDistanceToNowStrict } from "date-fns";
+import { formatDistanceToNowStrict } from "date-fns";
+import { formatDate } from "@/lib/utils/format";
 
 const subscribe = () => () => {};
 
-/** True after hydration (browser timezone known). */
+/** True after hydration (needed only for "relative", which depends on the current time). */
 function useIsClient() {
   return useSyncExternalStore(
     subscribe,
@@ -22,10 +23,7 @@ const PATTERNS = {
   day: "EEE, MMM d",
 } as const;
 
-/**
- * Renders a timestamp in the viewer's browser timezone. The server pass renders
- * a UTC fallback, replaced right after hydration.
- */
+/** Renders a timestamp in Indian Standard Time — identical on server and client. */
 export function LocalTime({
   value,
   format: kind = "datetime",
@@ -37,17 +35,15 @@ export function LocalTime({
 }) {
   const client = useIsClient();
   if (!value) return <span className={className}>—</span>;
-  const date = new Date(value);
+  const istFull = `${formatDate(value, "EEE, MMM d yyyy, h:mm a")} IST`;
   let text: string;
-  if (!client) {
-    text = kind === "relative" ? value.slice(0, 10) : `${value.slice(0, 16).replace("T", " ")} UTC`;
-  } else if (kind === "relative") {
-    text = formatDistanceToNowStrict(date, { addSuffix: true });
+  if (kind === "relative") {
+    text = client ? formatDistanceToNowStrict(new Date(value), { addSuffix: true }) : formatDate(value, PATTERNS.date);
   } else {
-    text = format(date, PATTERNS[kind]);
+    text = formatDate(value, PATTERNS[kind]);
   }
   return (
-    <time dateTime={value} className={className} title={client ? date.toString() : value}>
+    <time dateTime={value} className={className} title={istFull}>
       {text}
     </time>
   );

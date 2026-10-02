@@ -5,7 +5,7 @@ import {
   addDays,
   dateInTz,
   hhmmInTz,
-  safeTimeZone,
+  APP_TIME_ZONE,
   startOfWeek,
   widenedDayBounds,
 } from "@/components/agenda/tz";
@@ -93,13 +93,14 @@ type AssignmentRow = {
 
 const hhmm = (t: string | null) => (t ? t.slice(0, 5) : null);
 
-export function todayFor(profile: Pick<Profile, "timezone">): string {
-  return dateInTz(new Date(), safeTimeZone(profile.timezone));
+/** Today (yyyy-MM-dd) in IST. */
+export function todayFor(): string {
+  return dateInTz(new Date(), APP_TIME_ZONE);
 }
 
 /** Everything on the user's plate for one calendar day, sorted by time. */
 export const getDayAgenda = cache(async (profile: Pick<Profile, "id" | "timezone">, date: string): Promise<DayAgenda> => {
-  const tz = safeTimeZone(profile.timezone);
+  const tz = APP_TIME_ZONE;
   const supabase = await createClient();
   const bounds = widenedDayBounds(date);
 
@@ -275,7 +276,7 @@ export const getDayAgenda = cache(async (profile: Pick<Profile, "id" | "timezone
 
 /** Dates (yyyy-MM-dd) in the Mon–Sun week of `date` that have anything scheduled. */
 export async function getWeekMarkers(profile: Pick<Profile, "id" | "timezone">, date: string) {
-  const tz = safeTimeZone(profile.timezone);
+  const tz = APP_TIME_ZONE;
   const from = startOfWeek(date);
   const to = addDays(from, 6);
   const bounds = widenedDayBounds(from, to);

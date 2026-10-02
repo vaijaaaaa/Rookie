@@ -14,7 +14,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { LABELS } from "@/lib/utils/format";
 import { updateProfile } from "@/app/(app)/(protected)/settings/actions";
-import { COMMON_TIMEZONES, GOAL_VALUES, profileSchema, type ProfileValues } from "./schemas";
+import { GOAL_VALUES, profileSchema, type ProfileValues } from "./schemas";
 
 function Field({
   label,
@@ -59,10 +59,6 @@ export function ProfileForm({ defaultValues }: { defaultValues: ProfileValues })
   } = useForm<ProfileValues>({ resolver: zodResolver(profileSchema), defaultValues });
 
   const [avatarUrl, fullName, bio] = useWatch({ control, name: ["avatar_url", "full_name", "bio"] });
-
-  const timezones: string[] = COMMON_TIMEZONES.includes(defaultValues.timezone as (typeof COMMON_TIMEZONES)[number])
-    ? [...COMMON_TIMEZONES]
-    : [defaultValues.timezone, ...COMMON_TIMEZONES];
 
   const ids = {
     name: `${uid}-name`,
@@ -158,14 +154,8 @@ export function ProfileForm({ defaultValues }: { defaultValues: ProfileValues })
             ))}
           </NativeSelect>
         </Field>
-        <Field id={ids.tz} label="Timezone" error={errors.timezone?.message}>
-          <NativeSelect id={ids.tz} {...register("timezone")}>
-            {timezones.map((tz) => (
-              <option key={tz} value={tz}>
-                {tz.replace(/_/g, " ")}
-              </option>
-            ))}
-          </NativeSelect>
+        <Field id={ids.tz} label="Timezone" hint="All times on Rookie are shown in Indian Standard Time.">
+          <Input id={ids.tz} value="India Standard Time (IST, UTC+5:30)" readOnly disabled aria-describedby={`${ids.tz}-hint`} />
         </Field>
       </div>
 

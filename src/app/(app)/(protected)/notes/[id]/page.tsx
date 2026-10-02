@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { NoteEditor } from "@/components/notes/note-editor";
-import { safeTimeZone } from "@/components/agenda/tz";
+import { APP_TIME_ZONE } from "@/components/agenda/tz";
 import { requireProfile } from "@/lib/auth/session";
 import { formatDate } from "@/lib/utils/format";
 import { getNote, getNoteAttachOptions } from "@/services/notes";
@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function NotePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [profile, note, options] = await Promise.all([requireProfile(), getNote(id), getNoteAttachOptions()]);
+  const [, note, options] = await Promise.all([requireProfile(), getNote(id), getNoteAttachOptions()]);
   if (!note) notFound();
 
   return (
@@ -29,7 +29,7 @@ export default async function NotePage({ params }: { params: Promise<{ id: strin
           Created {formatDate(note.created_at)} · Updated {formatDate(note.updated_at, "MMM d, h:mm a")}
         </p>
       </div>
-      <NoteEditor key={note.id} note={note} options={options} timeZone={safeTimeZone(profile.timezone)} />
+      <NoteEditor key={note.id} note={note} options={options} timeZone={APP_TIME_ZONE} />
     </div>
   );
 }

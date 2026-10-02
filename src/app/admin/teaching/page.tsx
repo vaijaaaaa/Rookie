@@ -12,6 +12,7 @@ import { LocalTime } from "@/components/instructor/local-time";
 import { requireStaff } from "@/services/instructor/context";
 import { classScopeFilter, getManagedCourseIds } from "@/services/instructor/scope";
 import { dayBoundsInTz, nowIso, DAY } from "@/services/instructor/time";
+import { APP_TIME_ZONE } from "@/components/agenda/tz";
 import type { ClassStatus } from "@/types";
 
 export const metadata = { title: "Instructor" };
@@ -49,7 +50,7 @@ export default async function InstructorDashboard() {
   const ctx = await requireStaff();
   const courseIds = await getManagedCourseIds(ctx);
   const scope = classScopeFilter(ctx, courseIds);
-  const today = dayBoundsInTz(ctx.profile.timezone || "UTC", new Date());
+  const today = dayBoundsInTz(APP_TIME_ZONE, new Date());
 
   const classQuery = () => {
     const q = ctx.supabase

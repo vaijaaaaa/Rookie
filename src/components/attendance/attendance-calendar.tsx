@@ -10,6 +10,8 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns";
+import { TZDate } from "@date-fns/tz";
+import { APP_TIME_ZONE } from "@/components/agenda/tz";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -38,16 +40,16 @@ const SEVERITY: CalendarStatus[] = ["absent", "late", "unmarked", "excused", "pr
 
 const WEEK_STARTS_ON = 1; // Monday
 
-/** Parse ?month=YYYY-MM (falls back to the given default month). */
+/** Parse ?month=YYYY-MM (falls back to the given default month). Months are IST calendar months. */
 export function parseMonth(v: string | string[] | undefined, fallback: Date): Date {
   const s = Array.isArray(v) ? v[0] : v;
   const m = s?.match(/^(\d{4})-(0[1-9]|1[0-2])$/);
-  if (!m) return startOfMonth(fallback);
-  return new Date(Number(m[1]), Number(m[2]) - 1, 1);
+  if (!m) return startOfMonth(new TZDate(fallback, APP_TIME_ZONE));
+  return new TZDate(Number(m[1]), Number(m[2]) - 1, 1, APP_TIME_ZONE);
 }
 
 export function monthKey(d: Date) {
-  return format(d, "yyyy-MM");
+  return format(new TZDate(d, APP_TIME_ZONE), "yyyy-MM");
 }
 
 export function AttendanceCalendar({
@@ -59,7 +61,7 @@ export function AttendanceCalendar({
   month: Date;
   /** Current date (passed in so rendering stays pure). */
   today: Date;
-  /** keyed by yyyy-MM-dd (local) */
+  /** keyed by yyyy-MM-dd (IST) */
   entriesByDay: Map<string, CalendarEntry[]>;
   hrefFor: (month: Date) => string;
 }) {

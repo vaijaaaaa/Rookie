@@ -45,7 +45,6 @@ export default async function SettingsPage() {
             username: profile.username ?? "",
             bio: profile.bio ?? "",
             avatar_url: profile.avatar_url ?? "",
-            timezone: profile.timezone || "UTC",
             learning_goal: profile.learning_goal ?? "",
           }}
         />

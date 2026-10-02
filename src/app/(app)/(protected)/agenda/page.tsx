@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Agenda" };
 export default async function AgendaPage({ searchParams }: { searchParams: Promise<{ date?: string | string[] }> }) {
   const profile = await requireProfile();
   const sp = await searchParams;
-  const today = todayFor(profile);
+  const today = todayFor();
   const requested = Array.isArray(sp.date) ? sp.date[0] : sp.date;
   const date = isISODate(requested) ? requested : today;
 
