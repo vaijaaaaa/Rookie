@@ -89,7 +89,7 @@ export function ProfileForm({ defaultValues }: { defaultValues: ProfileValues })
   });
 
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-5">
+    <form method="post" onSubmit={onSubmit} noValidate className="space-y-5">
       <div className="flex items-center gap-4">
         <UserAvatar name={fullName} src={avatarUrl && /^https:\/\//.test(avatarUrl) ? avatarUrl : null} className="size-14" />
         <div className="min-w-0 flex-1">

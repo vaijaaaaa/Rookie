@@ -49,7 +49,7 @@ export function SignupForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-4">
+    <form method="post" onSubmit={onSubmit} noValidate className="space-y-4">
       <FormError message={formError} />
       <FormField
         label="Full name"
