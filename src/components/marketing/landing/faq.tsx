@@ -1,5 +1,5 @@
-import { Plus } from "lucide-react";
 import { LandingSection, SectionHeading } from "./section-heading";
+import { FaqList } from "./faq-list";
 
 const FAQ = [
   {
@@ -29,17 +29,7 @@ export function Faq() {
     <LandingSection labelledBy="faq-title" className="border-t">
       <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
         <SectionHeading id="faq-title" eyebrow="FAQ" title="Questions people ask before starting." />
-        <div className="landing-reveal divide-y rounded-xl border bg-card">
-          {FAQ.map(({ q, a }, i) => (
-            <details key={q} className="group px-5" open={i === 0}>
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 font-medium [&::-webkit-details-marker]:hidden">
-                {q}
-                <Plus className="size-4 shrink-0 text-muted-foreground transition-transform duration-300 group-open:rotate-45" aria-hidden />
-              </summary>
-              <p className="-mt-1 pb-5 text-sm leading-relaxed text-muted-foreground">{a}</p>
-            </details>
-          ))}
-        </div>
+        <FaqList items={FAQ} />
       </div>
     </LandingSection>
   );
