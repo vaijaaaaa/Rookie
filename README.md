@@ -170,7 +170,9 @@ docs/CONVENTIONS.md       engineering conventions
 | Admin (teacher) | instructor@rookie.dev  | `Rookie@2026` |
 | Admin      | admin@rookie.dev       | `Rookie@2026` |
 
-> ⚠️ These are development credentials. Delete or change them before going to production.
+> ⚠️ These are development credentials. Before going live, create your own admin
+> (`supabase/bootstrap-admin.sql`), then delete all demo accounts with
+> `supabase/cleanup-demo-users.sql` — it keeps courses, lessons, roadmaps and problems.
 
 To create your own admin account, run `supabase/bootstrap-admin.sql` (see step 5 above).
 

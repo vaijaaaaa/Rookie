@@ -12,7 +12,6 @@ const ERRORS: Record<string, string> = {
   confirm: "We couldn't confirm your email. The link may have expired.",
 };
 
-const DEMO = ["student@rookie.dev", "admin@rookie.dev"];
 
 export default async function LoginPage({
   searchParams,
@@ -35,20 +34,6 @@ export default async function LoginPage({
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Accounts are created by your Rookie admin. Need access? Ask them to add you.
       </p>
-
-      <aside aria-label="Demo accounts" className="mt-8 rounded-md border border-dashed bg-muted/30 p-3">
-        <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Demo accounts · dev seed</p>
-        <ul className="mt-2 space-y-0.5 font-mono text-xs">
-          {DEMO.map((email) => (
-            <li key={email} className="select-all">
-              {email}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-2 font-mono text-xs text-muted-foreground">
-          password: <span className="select-all text-foreground">Rookie@2026</span>
-        </p>
-      </aside>
     </>
   );
 }

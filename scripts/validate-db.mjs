@@ -198,5 +198,25 @@ if (admin) {
   console.log('\nUser management:', JSON.stringify({ studentBlocked: blocked, created: p, passwordOk: pw.ok, duplicateRejected: dup, resetOk: pw2.ok, selfDeleteRejected: selfDelete, deleted: gone.n === 0, bootstrapAdmin: bp }));
   if (!ok) throw new Error('user management checks failed');
 }
+
+// --- demo cleanup (supabase/cleanup-demo-users.sql) --------------------------
+if (process.argv.includes('--cleanup')) {
+  const cleanup = readFileSync(join(root, 'supabase', 'cleanup-demo-users.sql'), 'utf8');
+  let refused = false;
+  try { await db.exec(cleanup); } catch (e) { refused = /No non-demo admin/.test(String(e.message)); }
+  await db.query(`select public.admin_create_user('real.admin@example.com', 'Real Admin', 'password123', 'admin')`);
+  await db.exec(cleanup);
+  const { rows: [left] } = await db.query(`select
+      (select count(*)::int from auth.users where email like '%@rookie.dev') demo_users,
+      (select count(*)::int from public.profiles) profiles,
+      (select count(*)::int from public.courses) courses,
+      (select count(*)::int from public.lessons) lessons,
+      (select count(*)::int from public.coding_problems) problems,
+      (select count(*)::int from public.classes) classes,
+      (select count(*)::int from public.attendance) attendance,
+      (select count(*)::int from public.activity_logs) activity`);
+  console.log('\nDemo cleanup:', JSON.stringify({ refusedWithoutAdmin: refused, ...left }));
+  if (!refused || left.demo_users !== 0 || left.profiles !== 1 || left.courses === 0) throw new Error('cleanup check failed');
+}
 console.log('\nAll good.');
 await db.close();
