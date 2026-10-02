@@ -4,7 +4,7 @@ import * as React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { MarkdownPreview } from "./markdown-preview";
+import { MarkdownPreview } from "./markdown-preview-lazy";
 
 /** Markdown textarea with a Write / Preview toggle. */
 export function MarkdownField({

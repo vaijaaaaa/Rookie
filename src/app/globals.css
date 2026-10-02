@@ -153,3 +153,86 @@
 .hljs-type, .hljs-class .hljs-title { color: #ffa657; }
 .hljs-meta { color: #8b949e; }
 .hljs-variable, .hljs-params { color: #e6edf3; }
+
+/* ---------------------------------------------------------------------------
+   Landing page motion. CSS only; everything is disabled for reduced motion.
+   --------------------------------------------------------------------------- */
+@keyframes landing-fade-up {
+  from { opacity: 0; transform: translateY(14px); filter: blur(4px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+@keyframes landing-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(var(--tilt, 0deg)); }
+  50% { transform: translate3d(0, -14px, 0) rotate(calc(var(--tilt, 0deg) * -0.5)); }
+}
+@keyframes landing-card-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.96) rotate(var(--tilt, 0deg)); }
+  to { opacity: 1; transform: rotate(var(--tilt, 0deg)); }
+}
+@keyframes landing-marquee {
+  to { transform: translateX(-50%); }
+}
+@keyframes landing-caret {
+  50% { opacity: 0; }
+}
+@keyframes landing-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+@keyframes landing-bar {
+  from { transform: scaleX(0); }
+}
+
+.landing-enter {
+  animation: landing-fade-up 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: var(--delay, 0ms);
+}
+.landing-float {
+  opacity: 0;
+  animation:
+    landing-card-in 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) var(--delay, 0ms) forwards,
+    landing-drift var(--dur, 9s) ease-in-out calc(var(--delay, 0ms) + 0.9s) infinite;
+  will-change: transform;
+}
+.landing-marquee {
+  mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+}
+.landing-marquee-track {
+  animation: landing-marquee var(--dur, 40s) linear infinite;
+}
+.landing-marquee:hover .landing-marquee-track {
+  animation-play-state: paused;
+}
+.landing-caret {
+  animation: landing-caret 1s steps(1) infinite;
+}
+.landing-live-dot {
+  animation: landing-live 1.6s ease-in-out infinite;
+}
+.landing-bar {
+  transform-origin: left;
+  animation: landing-bar 1.2s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: var(--delay, 0ms);
+}
+
+/* Reveal on scroll where the browser supports scroll-driven animations; visible otherwise. */
+@supports (animation-timeline: view()) {
+  .landing-reveal {
+    animation: landing-fade-up linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 40%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-enter,
+  .landing-float,
+  .landing-marquee-track,
+  .landing-caret,
+  .landing-live-dot,
+  .landing-bar,
+  .landing-reveal {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+}

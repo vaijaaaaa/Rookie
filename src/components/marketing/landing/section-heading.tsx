@@ -7,42 +7,41 @@ export function SectionHeading({
   description,
   id,
   className,
-  action,
+  center,
 }: {
   eyebrow: string;
   title: string;
   description?: string;
   id?: string;
   className?: string;
-  action?: React.ReactNode;
+  center?: boolean;
 }) {
   return (
-    <div className={cn("mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between", className)}>
-      <div className="max-w-2xl">
-        <p className="mb-2 font-mono text-[11px] uppercase tracking-wider text-brand">{eyebrow}</p>
-        <h2 id={id} className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
-          {title}
-        </h2>
-        {description ? <p className="mt-2 text-sm text-muted-foreground sm:text-base">{description}</p> : null}
-      </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
+    <div className={cn("landing-reveal mb-10 max-w-2xl", center && "mx-auto text-center", className)}>
+      <p className="mb-3 font-mono text-[11px] tracking-wider text-brand uppercase">{eyebrow}</p>
+      <h2 id={id} className="text-3xl font-semibold tracking-[-0.03em] text-balance sm:text-4xl">
+        {title}
+      </h2>
+      {description ? <p className="mt-3 text-base text-muted-foreground">{description}</p> : null}
     </div>
   );
 }
 
-/** Full-width band with a top border and consistent container. */
+/** Full-width band with a consistent container. */
 export function LandingSection({
   children,
   labelledBy,
   className,
+  id,
 }: {
   children: React.ReactNode;
   labelledBy: string;
   className?: string;
+  id?: string;
 }) {
   return (
-    <section aria-labelledby={labelledBy} className={cn("border-t", className)}>
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">{children}</div>
+    <section id={id} aria-labelledby={labelledBy} className={cn("scroll-mt-16", className)}>
+      <div className="mx-auto max-w-6xl px-4 py-20 sm:py-28">{children}</div>
     </section>
   );
 }

@@ -9,7 +9,11 @@ const PROTECTED_PREFIXES = [
 ];
 
 /** Refreshes the auth session cookie and does an optimistic auth redirect. */
+/** Static public pages: skip the auth round-trip so they're served instantly. */
+const STATIC_PUBLIC = new Set(["/", "/about"]);
+
 export async function updateSession(request: NextRequest) {
+  if (STATIC_PUBLIC.has(request.nextUrl.pathname)) return NextResponse.next();
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_KEY, {

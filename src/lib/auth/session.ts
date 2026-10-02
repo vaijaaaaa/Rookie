@@ -4,11 +4,22 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, UserRole } from "@/types";
 
-/** Verified user (hits the auth server) — memoized per request. */
-export const getUser = cache(async () => {
+export interface SessionUser {
+  id: string;
+  email: string | null;
+}
+
+/**
+ * Signed-in user from the verified session JWT — memoized per request.
+ * getClaims() checks the signature locally against the project's cached JWKS,
+ * so it avoids a round-trip to the auth server on every page render.
+ */
+export const getUser = cache(async (): Promise<SessionUser | null> => {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  return data.user ?? null;
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  if (!claims?.sub) return null;
+  return { id: claims.sub, email: typeof claims.email === "string" ? claims.email : null };
 });
 
 export const getProfile = cache(async (): Promise<Profile | null> => {

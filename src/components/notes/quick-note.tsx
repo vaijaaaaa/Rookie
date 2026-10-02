@@ -10,7 +10,7 @@ import { timeAgo } from "@/lib/utils/format";
 import { createNote, deleteNote, updateNote, type NoteAttach } from "@/services/notes";
 import type { Note } from "@/types";
 import { MarkdownField } from "./markdown-field";
-import { MarkdownPreview } from "./markdown-preview";
+import { MarkdownPreview } from "./markdown-preview-lazy";
 
 /**
  * Compact "My notes" panel for lesson / class / practice pages.
