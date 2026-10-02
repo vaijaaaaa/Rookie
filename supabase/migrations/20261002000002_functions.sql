@@ -461,7 +461,7 @@ returns trigger language plpgsql security definer set search_path = public as $$
 declare v_title text;
 begin
   select title into v_title from public.assignments where id = new.assignment_id;
-  if new.status = 'submitted' and (tg_op = 'INSERT' or old.status = 'in_progress') then
+  if new.status in ('submitted', 'reviewed') and (tg_op = 'INSERT' or old.status = 'in_progress') then
     perform public.log_activity(new.user_id, 'assignment_submitted', new.assignment_id, v_title,
                                 '{}'::jsonb, coalesce(new.submitted_at, now()));
   end if;

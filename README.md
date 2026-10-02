@@ -123,7 +123,7 @@ src/
   types/                  domain types mirroring the schema
   proxy.ts                refreshes Supabase session, redirects anonymous users from protected routes
 supabase/
-  migrations/             0001 schema · 0002 functions & triggers · 0003 RLS
+  migrations/             0001 schema · 0002 functions & triggers · 0003 RLS · 0004 trigger fixes
   seed.sql                realistic demo data (users, courses, lessons, roadmaps, classes…)
 scripts/
   validate-db.mjs         runs migrations + seed in PGlite (in-process Postgres) as a smoke test
@@ -137,7 +137,8 @@ docs/CONVENTIONS.md       engineering conventions
 1. Create a project at [supabase.com](https://supabase.com) (or use an existing one).
 2. **Apply the migrations** — either:
    - **SQL editor**: open *SQL Editor* and run, in order,
-     `supabase/migrations/20261002000001_schema.sql`, `…0002_functions.sql`, `…0003_rls.sql`; or
+     `supabase/migrations/20261002000001_schema.sql`, `…0002_functions.sql`, `…0003_rls.sql`,
+     `…0004_trigger_fixes.sql`; or
    - **CLI**:
      ```bash
      npx supabase login
